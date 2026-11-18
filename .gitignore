@@ -1,0 +1,22 @@
+# Magic Phone local runtime data
+**/contacts.json
+**/settings.json
+**/events.log
+**/__pycache__/
+*.pyc
+
+# Local environments / build output
+.venv/
+venv/
+.env
+.env.*
+dist/
+build/
+publish/
+artifacts/
+
+# Windows / IDE noise
+Thumbs.db
+.DS_Store
+.vscode/
+.idea/

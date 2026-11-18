@@ -1,0 +1,33 @@
+{
+  "snapshot_date": "2026-11-18",
+  "source_archive": "Magic-Phone-Source-Snapshot-v0.10-Bridge-v0.21.zip",
+  "source_archive_sha256": "53e3618f82cddd5886bafdc6030d539bb35286fc4dd89cc20f654e9e79771379",
+  "included_files": [
+    "bridge/IMPORT_CONTACTS.bat",
+    "bridge/import_contacts.py",
+    "bridge/phone_ui.ps1",
+    "bridge/README.txt",
+    "bridge/server.py",
+    "bridge/START_PHONE_CONTROL.bat",
+    "BRIDGE_HOTFIX_FA.md",
+    "extension/background.js",
+    "extension/content.js",
+    "extension/manifest.json",
+    "extension/parser.js",
+    "extension/popup.html",
+    "extension/popup.js",
+    "README_FA.md",
+    "tests/test_bridge_dial.py",
+    "tests/test_composer.js",
+    "tests/test_enter_guard.py",
+    "tests/test_extension.js",
+    "tests/test_offline.py"
+  ],
+  "excluded_runtime_files": [
+    "bridge/contacts.json",
+    "bridge/settings.json",
+    "bridge/events.log",
+    "bridge/__pycache__/server.cpython-314.pyc"
+  ],
+  "note": "Historical source snapshot only. No installer or production-ready setup is included."
+}
