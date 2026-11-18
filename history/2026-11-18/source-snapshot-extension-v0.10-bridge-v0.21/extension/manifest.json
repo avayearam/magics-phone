@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "Magic Phone - Text & Voice Command Pilot",
+  "version": "0.10.0",
+  "description": "Routes explicit user-submitted ChatGPT composer commands to the local Phone Link controller with local approval.",
+  "permissions": [
+    "storage",
+    "tabs",
+    "scripting"
+  ],
+  "host_permissions": [
+    "http://127.0.0.1:18763/*",
+    "https://chatgpt.com/*",
+    "https://chat.openai.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*"
+      ],
+      "js": [
+        "parser.js",
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  }
+}
