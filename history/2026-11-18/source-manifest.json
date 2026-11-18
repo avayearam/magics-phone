@@ -1,11 +1,11 @@
 {
   "snapshot_date": "2026-11-18",
-  "source_archive": "Magic-Phone-Source-Snapshot-v0.10-Bridge-v0.21.zip",
-  "source_archive_sha256": "53e3618f82cddd5886bafdc6030d539bb35286fc4dd89cc20f654e9e79771379",
+  "component_path": "history/2026-11-18/source-snapshot-extension-v0.10-bridge-v0.21/",
   "included_files": [
     "bridge/IMPORT_CONTACTS.bat",
     "bridge/import_contacts.py",
-    "bridge/phone_ui.ps1",
+    "bridge/phone_ui.ps1.gz",
+    "bridge/phone_ui.ps1.sha256",
     "bridge/README.txt",
     "bridge/server.py",
     "bridge/START_PHONE_CONTROL.bat",
@@ -23,11 +23,14 @@
     "tests/test_extension.js",
     "tests/test_offline.py"
   ],
+  "original_source_file_hashes": {
+    "bridge/phone_ui.ps1": "c89ebc2b0fd04d92e03d034fe4ab8ddfc3a820702d470e79ab6a9d8e0a955fc5"
+  },
   "excluded_runtime_files": [
     "bridge/contacts.json",
     "bridge/settings.json",
     "bridge/events.log",
     "bridge/__pycache__/server.cpython-314.pyc"
   ],
-  "note": "Historical source snapshot only. No installer or production-ready setup is included."
+  "note": "Historical source snapshot only. The original phone_ui.ps1 is stored gzip-compressed because the direct GitHub text write path is size-limited. No installer or production-ready setup is included."
 }
