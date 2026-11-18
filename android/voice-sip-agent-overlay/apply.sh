@@ -14,6 +14,8 @@ if [ "$ACTUAL" != "$PIN" ]; then
   echo "Unexpected upstream revision: $ACTUAL (expected $PIN)" >&2
   exit 1
 fi
+# Fetch pinned OFL font files into the overlay before installing it into upstream.
+bash "$HERE/fetch-vazirmatn.sh"
 while IFS= read -r -d '' src; do
   rel="${src#"$FILES"/}"
   mkdir -p "$TARGET/$(dirname "$rel")"

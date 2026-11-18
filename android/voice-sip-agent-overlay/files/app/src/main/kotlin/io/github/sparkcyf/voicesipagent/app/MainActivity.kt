@@ -77,10 +77,12 @@ class MainActivity : DialerRoleActivity() {
         editor.syncSaved(runtime.settings, runtime.pendingSettingsFlow.value)
         GatewayService.start(this)
         setContent {
-            MaterialTheme(colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()) {
+            MagicPhoneTheme {
                 val message by roleMessage.collectAsState()
-                Scaffold { pad -> Screen(runtime, editor, Modifier.padding(pad), ::requestDialer, ::switchDialer,
-                    ::chooseDialerInSettings, ::cancelDialerChange, ::setTakeoverFromUi, message) }
+                Scaffold(containerColor = Color.Transparent) { pad ->
+                    MagicPhoneScreen(runtime, Modifier.padding(pad), ::setTakeoverFromUi,
+                        ::chooseDialerInSettings, message)
+                }
             }
         }
     }
