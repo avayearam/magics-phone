@@ -143,13 +143,13 @@ internal class GeminiLiveEndpoint(
                 override fun onMessage(webSocket: WebSocket, text: String) {
                     if (ended) return
                     runCatching { handleMessage(text) }.onFailure {
-                        log("Gemini Live message parse failed (\${it.javaClass.simpleName})")
+                        log("Gemini Live message parse failed (${it.javaClass.simpleName})")
                     }
                 }
 
                 override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
                     if (!ended) {
-                        log("Gemini Live WebSocket failed: \${t.javaClass.simpleName}")
+                        log("Gemini Live WebSocket failed: type=${t.javaClass.simpleName} http=${response?.code ?: 0}")
                         fail(HangupCause.NETWORK_ERROR, "Gemini connection failed")
                     }
                 }
