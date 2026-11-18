@@ -1,0 +1,3 @@
+[submodule "android/voice-sip-agent"]
+	path = android/voice-sip-agent
+	url = https://github.com/sparkcyf/android-voice-sip-agent.git

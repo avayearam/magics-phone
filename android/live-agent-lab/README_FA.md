@@ -1,6 +1,6 @@
 # Magic Phone Android — Direct Gemini Live transport lab
 
-Milestone 1 complete: the real Irancell incoming-call echo test passed on the Samsung Galaxy S23 Ultra using Voice SIP Agent. Gemini Live transport source is now prepared, but the Android fork is not yet integrated and no APK has been built.
+Milestone 1 complete: the real Irancell incoming-call echo test passed on the Samsung Galaxy S23 Ultra using Voice SIP Agent. Gemini Live transport is now integrated as a pinned upstream submodule plus a local overlay under `android/voice-sip-agent-overlay/`. The APK has not yet been built.
 
 - Phone target: Samsung Galaxy S23 Ultra / Irancell / Android 16.
 - Voice SIP Agent was installed with Shizuku access, but SIP registration failed with 408. The new design bypasses SIP and PBX.
@@ -13,9 +13,9 @@ Offline tests:
     bash android/live-agent-lab/run-tests.sh
 
 ## Next gates — mandatory before claiming cellular success
-1. Integrate GeminiLiveEndpoint, GeminiLiveMediaPort and GeminiTokenStore into a GPL-compliant Voice SIP Agent fork; keep the current CellularEndpoint/CallBridge audio route unchanged.
-2. Add the Gemini mode UI and encrypted token entry; default OFF and never export the token.
-3. Deploy the Worker phone-mode prompt/greeting support, then build and sign a test APK and validate both audio directions on the S23 Ultra.
+1. Initialize the pinned submodule and apply `android/voice-sip-agent-overlay/apply.sh` (or `apply.ps1` on Windows).
+2. Build the Android app and install it alongside the original Voice SIP Agent; grant Shizuku to the new package.
+3. Enter the existing Worker token, enable Gemini Live for a coordinated test, and validate both audio directions on the S23 Ultra.
 
 The user completed the loopback test directly in the Android app; no computer or ADB was required. The caller heard their own voice echoed, confirming cellular capture and injection on this device.
 
