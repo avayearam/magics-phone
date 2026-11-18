@@ -13,7 +13,10 @@ var assets embed.FS
 
 const address = "127.0.0.1:18764"
 
-func handler() http.Handler {
+func handler() http.Handler { return handlerWithDiscovery(discoverAudio) }
+
+func handlerWithDiscovery(provider func() inventory) http.Handler {
+ discovery := discoveryHandler(provider)
  return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
   w.Header().Set("Cache-Control", "no-store")
   w.Header().Set("X-Content-Type-Options", "nosniff")
@@ -26,7 +29,9 @@ func handler() http.Handler {
    w.Header().Set("Content-Type", "text/html; charset=utf-8"); _, _ = w.Write(body)
   case "/api/status":
    w.Header().Set("Content-Type", "application/json")
-   _, _ = fmt.Fprint(w, `{"version":"0.1.0","mode":"local-preview","routingAvailable":false,"captureActive":false}`)
+   _, _ = fmt.Fprint(w, `{"version":"0.2.0","mode":"local-preview","routingAvailable":false,"captureActive":false}`)
+  case "/api/discovery":
+   discovery(w,r)
   default: http.NotFound(w,r)
   }
  })
