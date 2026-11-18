@@ -121,7 +121,7 @@ internal class GeminiLiveEndpoint(
             }
             val request = try {
                 Request.Builder()
-                    .url(MagicLiveHandshake.URL)
+                    .url(MagicLiveHandshake.url(token))
                     .header("Origin", MagicLiveHandshake.ORIGIN)
                     .header("Sec-WebSocket-Protocol", protocols.joinToString(", "))
                     .build()
@@ -235,11 +235,23 @@ internal class GeminiLiveEndpoint(
 }
 
 
-/** Exact handshake used by the already-running Magic Phone Live Worker. */
+/**
+ * Backward-compatible: legacy bridge tokens keep the existing Worker URL.
+ * New independently issued device tokens route to the direct-origin WebSocket.
+ * A new APK is required for the direct path, but must NOT be released before
+ * /call/ws is confirmed operational with real two-way audio.
+ */
 internal object MagicLiveHandshake {
-    const val URL = "wss://phone.magics.site/ws?mode=phone"
+    const val LEGACY_URL = "wss://phone.magics.site/ws?mode=phone"
+    const val DIRECT_URL = "wss://ai.magics.site/call/ws?mode=phone"
+    const val URL = LEGACY_URL
     const val ORIGIN = "https://ai.magics.site"
     const val PROTOCOL = "magic-phone.v1"
+    private val deviceTokenPattern = Regex("^mpa_[a-f0-9]{48}$")
+
+    fun isDeviceToken(secret: String): Boolean = deviceTokenPattern.matches(secret)
+
+    fun url(secret: String): String = if (isDeviceToken(secret)) DIRECT_URL else LEGACY_URL
 
     fun protocols(secret: String): List<String> {
         require(secret.length >= 24 && secret.none { it.code < 32 || it.code == 127 }) {
@@ -247,6 +259,6 @@ internal object MagicLiveHandshake {
         }
         val encoded = Base64.getUrlEncoder().withoutPadding()
             .encodeToString(secret.toByteArray(Charsets.UTF_8))
-        return listOf(PROTOCOL, "magic-auth.$encoded")
+        return listOf(PROTOCOL, (if (isDeviceToken(secret)) "magic-agent." else "magic-auth.") + encoded)
     }
 }

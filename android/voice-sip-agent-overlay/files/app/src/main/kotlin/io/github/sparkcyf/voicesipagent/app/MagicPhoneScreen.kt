@@ -81,7 +81,7 @@ internal fun MagicPhoneScreen(rt: GatewayRuntime, modifier: Modifier=Modifier,
             Indicator("شیزوکو", h.shizuku==ShizukuConnector.State.CONNECTED)
             Indicator("دسترسی مدیریت تماس", h.callAccessReady)
             Indicator("دسترسی به صدای تماس", h.audioReady)
-            Indicator("رمز اتصال Worker", tokenReady)
+            Indicator("توکن اتصال ایجنت", tokenReady)
             if (h.shizuku==ShizukuConnector.State.PERMISSION_REQUIRED ||
                 h.shizuku==ShizukuConnector.State.PERMISSION_DENIED) {
                 Button(onClick={rt.shizuku.requestPermission()}) {Text("اجازه شیزوکو")}
@@ -124,15 +124,15 @@ internal fun MagicPhoneScreen(rt: GatewayRuntime, modifier: Modifier=Modifier,
                 style=MaterialTheme.typography.bodySmall, color=gray)
         }
         PhoneCard("Gemini Live") {
-            Text("کلید Google فقط در Cloudflare نگهداری می‌شود؛ اینجا رمز Worker ذخیره می‌شود.",
+            Text("کلید Google روی سرور محفوظ است. توکن دستگاه ایجنت را از پنل مدیریتی وارد کن؛ رمز قدیمی Worker هم تا مهاجرت پشتیبانی می‌شود.",
                 style=MaterialTheme.typography.bodySmall, color=gray)
             OutlinedTextField(value=secret,onValueChange={secret=it},
-                label={Text("رمز اتصال امن")},singleLine=true,
+                label={Text("توکن اختصاصی دستگاه")},singleLine=true,
                 visualTransformation=PasswordVisualTransformation(),
                 keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Password),
                 modifier=Modifier.fillMaxWidth())
             Button(onClick={rt.saveGeminiBridgeToken(secret);secret=""},
-                enabled=secret.length>=24 && idle){Text("ذخیره امن رمز")}
+                enabled=secret.length>=24 && idle){Text("ذخیره امن توکن")}
             Text(liveStatus,style=MaterialTheme.typography.bodySmall,color=gray)
             PhoneSwitch("پاسخ‌گویی با هوش مصنوعی",
                 "تماس‌های سیم‌کارت‌های انتخاب‌شده به‌صورت خودکار پاسخ داده می‌شوند.",
