@@ -930,7 +930,12 @@ class GatewayRuntime private constructor(context: Context) {
             if (geminiMode) _geminiStatus.value = "ابتدا رمز دسترسی Worker را ذخیره کن."
             return
         }
-        val inboundTarget = if (geminiMode && !loopback) "magic-ai" else s.inboundTarget.ifBlank { s.username }
+        val inboundTarget = IncomingCallTargetPolicy.resolve(
+            loopback = loopback,
+            geminiMode = geminiMode,
+            sipTarget = s.inboundTarget,
+            sipUsername = s.username,
+        )
         val b = CallBridge(
             sideA = cellular,
             sideB = sideB,
