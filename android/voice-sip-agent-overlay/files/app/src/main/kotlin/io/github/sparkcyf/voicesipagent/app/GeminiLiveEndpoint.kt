@@ -164,7 +164,7 @@ internal class GeminiLiveEndpoint(
             val root = JSONObject(text)
             if (root.optString("bridgeStatus") == "setup_confirmed") {
                 if (state != LegState.CONNECTED) {
-                    val port = GeminiLiveMediaPort(format) { encodedAudio ->
+                    val port = GeminiLiveMediaPort(format, diagnostic = { log(it) }) { encodedAudio ->
                         val ws = socket
                         if (ws == null || ended || ws.queueSize() > 256 * 1024) false
                         else ws.send(JSONObject().put("type", "audio").put("data", encodedAudio).toString())
@@ -177,6 +177,13 @@ internal class GeminiLiveEndpoint(
                         if (!started) fail(HangupCause.NETWORK_ERROR, "could not start phone greeting")
                         else log("Gemini Live ready; call leg connected")
                     } else port.close()
+                }
+                return
+            }
+            if (root.optString("bridgeStatus") == "audio_forwarded") {
+                val forwarded = root.optLong("audioFrames", 0L)
+                if (forwarded > 0 && forwarded % 250L == 0L) {
+                    log("Worker forwarded " + forwarded + " audio frames toward Gemini")
                 }
                 return
             }

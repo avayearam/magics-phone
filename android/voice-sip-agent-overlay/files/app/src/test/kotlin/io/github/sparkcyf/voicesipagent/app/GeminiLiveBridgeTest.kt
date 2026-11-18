@@ -49,4 +49,28 @@ class GeminiLiveBridgeTest {
         port.interrupt()
         assertEquals(0, port.queuedFrames())
     }
+    @Test fun silentFramesAndFailedWorkerSendsAreReportedWithoutAudioData() {
+        val reports = mutableListOf<String>()
+        val port = GeminiLiveMediaPort(PcmFormat.WIDEBAND, diagnostic = { reports += it }) { false }
+        repeat(250) { port.writeFrame(ShortArray(320)) }
+        val report = reports.single()
+        assertTrue(report.contains("inFrames=250"))
+        assertTrue(report.contains("inPeak=0"))
+        assertTrue(report.contains("inVoiced=0"))
+        assertTrue(report.contains("wsSendFailures=250"))
+        assertTrue(report.contains("outChunks=0"))
+        port.close()
+    }
+
+    @Test fun loudCellularSamplesProduceNonZeroInputPeak() {
+        val reports = mutableListOf<String>()
+        val port = GeminiLiveMediaPort(PcmFormat.NARROWBAND, diagnostic = { reports += it }) { true }
+        repeat(250) { port.writeFrame(ShortArray(160) { 1200 }) }
+        assertTrue(reports.single().contains("inPeak=1200"))
+        assertTrue(reports.single().contains("inVoiced=250"))
+        assertTrue(reports.single().contains("wsSendFailures=0"))
+        port.close()
+    }
+
+
 }

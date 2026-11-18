@@ -12,6 +12,7 @@ import java.util.Base64
  */
 internal class GeminiLiveMediaPort(
     override val format: PcmFormat,
+    private val diagnostic: (String) -> Unit = {},
     private val sendBase64Audio: (String) -> Boolean,
 ) : MediaPort, AutoCloseable {
     override val isClockSource: Boolean = false
@@ -24,6 +25,28 @@ internal class GeminiLiveMediaPort(
     private var downsampleSum = 0L
     private var downsampleCount = 0
     @Volatile private var closed = false
+    @Volatile private var inFrames = 0L
+    @Volatile private var inVoiced = 0L
+    @Volatile private var inPeak = 0
+    @Volatile private var wsSendFailures = 0L
+    @Volatile private var outChunks = 0L
+    @Volatile private var outPeak = 0
+
+    /** Never log actual audio bytes. Only amplitude/count statistics every five seconds. */
+    private fun peakOf(samples: ShortArray): Int {
+        var max = 0
+        for (sample in samples) max = maxOf(max, kotlin.math.abs(sample.toInt()))
+        return max
+    }
+
+    private fun peakOfPcm24(bytes: ByteArray): Int {
+        var max = 0
+        for (i in bytes.indices step 2) {
+            val value = ((bytes[i].toInt() and 255) or (bytes[i + 1].toInt() shl 8)).toShort().toInt()
+            max = maxOf(max, kotlin.math.abs(value))
+        }
+        return max
+    }
 
     override fun setClockListener(listener: io.github.sparkcyf.voicesipagent.voice.FrameClockListener?) = Unit
 
@@ -44,7 +67,21 @@ internal class GeminiLiveMediaPort(
             bytes[i * 2 + 1] = (sample shr 8).toByte()
         }
         val encoded = Base64.getEncoder().encodeToString(bytes)
-        runCatching { sendBase64Audio(encoded) }
+        val sent = runCatching { sendBase64Audio(encoded) }.getOrDefault(false)
+        if (!sent) wsSendFailures++
+        val peak = peakOf(frameIn)
+        if (peak > 300) inVoiced++
+        inPeak = maxOf(inPeak, peak)
+        inFrames++
+        if (inFrames % 250L == 0L) {
+            val report = "audio path: inFrames=" + inFrames + " inPeak=" + inPeak +
+                " inVoiced=" + inVoiced + " wsSendFailures=" + wsSendFailures +
+                " outChunks=" + outChunks + " outPeak=" + outPeak
+            runCatching { diagnostic(report) }
+            inPeak = 0
+            inVoiced = 0
+            outPeak = 0
+        }
     }
 
     /** Gemini Live audio is PCM16LE mono at 24 kHz. Chunks may split at any sample boundary. */
@@ -52,6 +89,8 @@ internal class GeminiLiveMediaPort(
     fun onGeminiPcm24k(bytes: ByteArray) {
         require(bytes.size % 2 == 0 && bytes.size <= 262144) { "invalid Gemini PCM16 chunk" }
         if (closed) return
+        outChunks++
+        outPeak = maxOf(outPeak, peakOfPcm24(bytes))
         for (i in bytes.indices step 2) {
             val sample = ((bytes[i].toInt() and 0xff) or (bytes[i + 1].toInt() shl 8)).toShort()
             if (format.sampleRate == 16000) {
