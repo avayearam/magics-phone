@@ -1,0 +1,13 @@
+<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><style>
+body{font-family:Tahoma,Arial,sans-serif;min-width:330px;max-width:360px;background:#19191d;color:#fafafa;padding:16px;line-height:1.7}
+input{width:100%;box-sizing:border-box;padding:8px;margin:6px 0;color:#222}button{padding:9px 12px;border:0;border-radius:8px;margin:5px 2px;background:#8158e9;color:white;cursor:pointer}button.secondary{background:#44444e}small{line-height:1.7;display:block;color:#cecad5}b{color:#c6b4ff}#status,#diagnostics{margin-top:10px;padding:10px;background:#282832;border-radius:8px;white-space:pre-line;overflow-wrap:anywhere}#diagnostics{font-size:12px;color:#ddd}#connection{font-size:13px;color:#d6f8df}
+</style></head><body><b>Magic Phone | v0.10</b>
+<small>فقط فرمانی را که خودت از کادر پیام ارسال می‌کنی بررسی می‌کند. برای هر تماس تأیید محلی الزامی است.</small>
+<label for="token">کد اتصال محلی (فقط یک‌بار)</label><input type="password" id="token" autocomplete="off" placeholder="PAIRING TOKEN از کنترلر ویندوز"/>
+<button id="save">ذخیره کد</button><button id="arm">فعال‌سازی</button>
+<button id="test" class="secondary">تست کنترلر بدون تماس</button>
+<button id="probe" class="secondary">اتصال به همین تب ChatGPT</button>
+<div id="tabstate"></div>
+<div id="connection"></div><div id="status"></div><div id="diagnostics"></div>
+<small>فرمان نمونه تایپی یا گفتاری: «به J A N زنگ بزن». پس از اتصال به همین تب، ارسال تایپی یا متن دیکته‌شده از کادر ProseMirror بررسی می‌شود. حالت Voice زنده هنوز تأیید نشده است. پیام‌های قبلی هرگز اجرا نمی‌شوند.</small>
+<script src="parser.js"></script><script src="popup.js"></script></body></html>
