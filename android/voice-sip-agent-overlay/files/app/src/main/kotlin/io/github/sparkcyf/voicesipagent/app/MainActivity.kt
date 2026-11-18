@@ -178,12 +178,14 @@ private fun Screen(rt: GatewayRuntime, editor: SipSettingsDraft, modifier: Modif
                 if (h.takeover) "${h.shizuku} ${h.shizukuDetail}" else "Stopped while takeover is off")
             Check("Call audio access", h.audioReady)
             Check("Doze allowlisted", p?.get(HealthKeys.DOZE_ALLOWLISTED) == true)
-            Check("SIP registration", h.sip.ready,
-                when {
-                    geminiAgentEnabled -> "Not used while Gemini Live is selected"
-                    h.takeover -> h.sip.detail
-                    else -> "Stopped while takeover is off"
-                })
+            if (geminiAgentEnabled) {
+                Check("Gemini Live Worker token", geminiTokenConfigured,
+                    if (geminiTokenConfigured) "Stored securely; live connection is checked when a call starts"
+                    else "Not configured")
+            } else {
+                Check("SIP registration", h.sip.ready,
+                    if (h.takeover) h.sip.detail else "Stopped while takeover is off")
+            }
             Text("SIM slots: " + h.sims.joinToString { "${it.slot} ${it.carrier}" }.ifEmpty { "none" },
                 style = MaterialTheme.typography.bodySmall)
             FlowRow(
