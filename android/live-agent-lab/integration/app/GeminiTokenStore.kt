@@ -24,15 +24,17 @@ internal class GeminiTokenStore(context: Context) {
         prefs.edit().putString(TOKEN_KEY, Base64.encodeToString(sealed, Base64.NO_WRAP)).apply()
     }
 
-    fun load(): String? = try {
-        val stored = prefs.getString(TOKEN_KEY, null) ?: return null
-        val raw = Base64.decode(stored, Base64.NO_WRAP)
-        require(raw.size > 12)
-        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-        cipher.init(Cipher.DECRYPT_MODE, key(), GCMParameterSpec(128, raw, 0, 12))
-        String(cipher.doFinal(raw, 12, raw.size - 12), Charsets.UTF_8)
-    } catch (_: Exception) {
-        null
+    fun load(): String? {
+        return try {
+            val stored = prefs.getString(TOKEN_KEY, null) ?: return null
+            val raw = Base64.decode(stored, Base64.NO_WRAP)
+            require(raw.size > 12)
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            cipher.init(Cipher.DECRYPT_MODE, key(), GCMParameterSpec(128, raw, 0, 12))
+            String(cipher.doFinal(raw, 12, raw.size - 12), Charsets.UTF_8)
+        } catch (_: Exception) {
+            null
+        }
     }
 
     fun clear() { prefs.edit().remove(TOKEN_KEY).apply() }

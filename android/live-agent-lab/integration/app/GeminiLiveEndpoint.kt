@@ -171,7 +171,9 @@ internal class GeminiLiveEndpoint(
                     timer.shutdownNow()
                     if (transition(LegState.CONNECTED)) {
                         publishMedia(port)
-                        log("Gemini Live ready; call leg connected")
+                        val started = socket?.send(JSONObject().put("type", "phone_start").toString()) == true
+                        if (!started) fail(HangupCause.NETWORK_ERROR, "could not start phone greeting")
+                        else log("Gemini Live ready; call leg connected")
                     } else port.close()
                 }
                 return

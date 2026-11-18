@@ -1,6 +1,6 @@
 # Magic Phone Android — Direct Gemini Live transport lab
 
-Phase 1: standalone phone PCM ↔ WebSocket protocol preparation; NOT a built APK and NOT connected to an actual cellular call. Existing Magic Phone Android app is unaffected.
+Milestone 1 complete: the real Irancell incoming-call echo test passed on the Samsung Galaxy S23 Ultra using Voice SIP Agent. Gemini Live transport source is now prepared, but the Android fork is not yet integrated and no APK has been built.
 
 - Phone target: Samsung Galaxy S23 Ultra / Irancell / Android 16.
 - Voice SIP Agent was installed with Shizuku access, but SIP registration failed with 408. The new design bypasses SIP and PBX.
@@ -13,11 +13,13 @@ Offline tests:
     bash android/live-agent-lab/run-tests.sh
 
 ## Next gates — mandatory before claiming cellular success
-1. Use Voice SIP Agent's official loopback mode on the real S23 Ultra to verify privileged *two-way in-call audio*. Keep Take over calls OFF until a scheduled, consenting test call. Use Direct telephony; disable local output mute when testing.
-2. Implement authenticated Android WebSocket client and a new CallEndpoint in a GPL-compatible Voice SIP Agent fork; wire it to CallBridge and Android telephony, while retaining original system dialer by default.
-3. Build and sign a test APK, validate it on Android 16/Irancell, test call teardown, latency, echo and secure token storage.
+1. Integrate GeminiLiveEndpoint, GeminiLiveMediaPort and GeminiTokenStore into a GPL-compliant Voice SIP Agent fork; keep the current CellularEndpoint/CallBridge audio route unchanged.
+2. Add the Gemini mode UI and encrypted token entry; default OFF and never export the token.
+3. Deploy the Worker phone-mode prompt/greeting support, then build and sign a test APK and validate both audio directions on the S23 Ultra.
 
-Optional ADB command for offline loopback configuration:
+The user completed the loopback test directly in the Android app; no computer or ADB was required. The caller heard their own voice echoed, confirming cellular capture and injection on this device.
+
+Optional ADB command for offline loopback configuration (not required for the completed test):
     adb shell am broadcast -n io.github.sparkcyf.voicesipagent/io.github.sparkcyf.voicesipagent.app.AdbControlReceiver --es op loopback --ez on true
     adb shell am broadcast -n io.github.sparkcyf.voicesipagent/io.github.sparkcyf.voicesipagent.app.AdbControlReceiver --es op provision --ei audio_method 2
     adb shell am broadcast -n io.github.sparkcyf.voicesipagent/io.github.sparkcyf.voicesipagent.app.AdbControlReceiver --es op earpiece-mute --ez on false

@@ -3,8 +3,12 @@
 ## نتیجه سخت‌افزاری تأییدشده
 روی Samsung Galaxy S23 Ultra با Voice SIP Agent، حالت Echo incoming calls (test) فعال شد و یک تماس ورودی واقعی ایرانسل پاسخ داده شد؛ تماس‌گیرنده پژواک صدای خودش را شنید. بنابراین مسیر تصاحب تماس، دریافت PCM و تزریق دوباره صدا روی همین دستگاه در تست واقعی تأیید شده است. این نتیجه هنوز اتصال Gemini را تأیید نمی‌کند.
 
+## وضعیت تست کد
+
+تست مستقل Kotlin روی PCM16LE، ورودی 8/16kHz، خروجی 24kHz، مرز chunkها، interruption و محدودیت صف اجرا شد: ۱۱ بررسی موفق. این تست، build کامل Android یا اتصال واقعی Gemini را اثبات نمی‌کند.
+
 ## کد آماده ادغام
-این پوشه یک بسته source برای fork مبتنی بر sparkcyf/android-voice-sip-agent است:
+این پوشه یک بسته source برای fork مبتنی بر sparkcyf/android-voice-sip-agent است. Endpoint پس از دریافت setup_confirmed پیام phone_start می‌فرستد تا Worker با یک سلام کوتاه فارسی تماس را آغاز کند:
 - GeminiLiveEndpoint.kt: یک CallEndpoint جدید که به‌جای SIP به wss://phone.magics.site/ws?mode=phone وصل می‌شود. قرارداد Worker فعلی را رعایت می‌کند: Origin https://ai.magics.site و subprotocolهای magic-phone.v1 و magic-auth.<base64url token>.
 - GeminiLiveMediaPort.kt: MediaPort clockless با ورودی 8/16kHz و خروجی 8/16kHz؛ صوت خروجی Gemini را از 24kHz PCM16LE تبدیل می‌کند و ورودی تماس را به 16kHz موردنیاز Worker می‌فرستد. صف پخش حداکثر یک ثانیه است و هنگام interruption پاک می‌شود.
 - GeminiTokenStore.kt: رمز را با AES-GCM و کلید Android Keystore ذخیره می‌کند. کلید Google API هرگز روی گوشی قرار نمی‌گیرد.
@@ -45,4 +49,4 @@
 5. هیچ تستی با تماس‌گیرنده ناآگاه انجام نشود. صدای تماس برای پردازش ابری به Gemini فرستاده می‌شود؛ قبل از تست، طرف مقابل مطلع و راضی باشد.
 
 ## وضعیت ساخت
-فایل‌های این پوشه هنوز در پروژه upstream app یکپارچه نشده‌اند و APK تولید نشده است. این‌ها source additions برای مرحله ادغام‌اند، نه اپ نصب‌شدنی مستقل.
+فایل‌های این پوشه هنوز در پروژه upstream app یکپارچه نشده‌اند و APK تولید نشده است. Worker phone-mode نیز در GitHub main ثبت شده، اما هنوز Deploy نشده است. این‌ها source additions برای مرحله ادغام‌اند، نه اپ نصب‌شدنی مستقل.
