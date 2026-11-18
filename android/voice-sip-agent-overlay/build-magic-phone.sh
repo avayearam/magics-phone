@@ -7,7 +7,7 @@ OUT="$HERE/dist"
 for tool in java git bash sha256sum; do
   command -v "$tool" >/dev/null 2>&1 || { echo "Missing build tool: $tool" >&2; exit 2; }
 done
-if [ ! -d "$APP/.git" ]; then
+if [ ! -e "$APP/.git" ]; then
   echo "Initialize submodule: git submodule update --init --recursive" >&2
   exit 2
 fi
