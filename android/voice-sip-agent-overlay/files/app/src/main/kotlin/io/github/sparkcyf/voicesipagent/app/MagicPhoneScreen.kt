@@ -107,11 +107,11 @@ internal fun MagicPhoneScreen(rt: GatewayRuntime, modifier: Modifier=Modifier,
                 settings.muteEarpiece, {rt.setMuteEarpiece(it)})
         }
         PhoneCard("مسیر صوتی تماس") {
-            Text("در آزمایش قبلی، صدای Gemini با حالت «مستقیم» به مخاطب رسید.",
+            Text("در آزمایش قبلی، صدای Gemini با حالت «مستقیم» به مخاطب رسید. انتخاب این حالت، سکوت خروجی گوشی را هم خاموش می‌کند.",
                 style=MaterialTheme.typography.bodySmall, color=gray)
             Row(horizontalArrangement=Arrangement.spacedBy(10.dp),
                 modifier=Modifier.fillMaxWidth()) {
-                OutlinedButton(onClick={rt.applySettings { it.copy(audioMethod=AudioMethod.LEGACY) }},
+                OutlinedButton(onClick={rt.applySettings { it.copy(audioMethod=AudioMethod.LEGACY, muteEarpiece=false) }},
                     modifier=Modifier.weight(1f)) {Text(if (settings.audioMethod==AudioMethod.LEGACY) "✓ مستقیم" else "مستقیم")}
                 OutlinedButton(onClick={rt.applySettings { it.copy(audioMethod=AudioMethod.AUTO) }},
                     modifier=Modifier.weight(1f)) {Text(if (settings.audioMethod==AudioMethod.AUTO) "✓ خودکار" else "خودکار")}
