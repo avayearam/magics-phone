@@ -1,18 +1,126 @@
-<!doctype html><html lang="fa" dir="rtl" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Magic Phone — Audio Routing Lab</title><style>
-:root{color-scheme:dark;--bg:#141219;--surface:#221f29;--ink:#f5f2f8;--muted:#bfb4c7;--line:#493b57;--accent:#9b79ea;--shade:#362545}html[data-theme="light"]{color-scheme:light;--bg:#f8f6fa;--surface:#fff;--ink:#2b2231;--muted:#6e6178;--line:#ded2e8;--accent:#7448bf;--shade:#f1eafd}*{box-sizing:border-box}body{background:var(--bg);color:var(--ink);margin:0;font:16px/1.85 Vazirmatn,Tahoma,sans-serif}main{max-width:940px;margin:auto;padding:28px 18px}header,.flex{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}h1{font-size:30px;margin:14px 0}h2{font-size:19px;margin:0 0 10px}p{margin:4px 0 14px}.hint{font-size:14px;color:var(--muted)}article{background:radial-gradient(ellipse at 100% 0,var(--shade),transparent 75%),var(--surface);padding:20px;border:1px solid var(--line);border-radius:18px;margin:14px 0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}label{font-size:14px;display:block;margin:10px 0 5px}select,button{background:var(--surface);color:var(--ink);font:inherit;border:1px solid var(--line);border-radius:10px;padding:9px 12px;max-width:100%}select{width:100%}button{cursor:pointer}button.primary{background:var(--accent);color:white;border:none}button:disabled{opacity:.5;cursor:not-allowed}button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}.brand{font-weight:900;direction:ltr;font-size:22px}.brand b{color:var(--accent)}.chip{border:1px solid var(--line);border-radius:99px;padding:4px 12px;font-size:13px}.warning{border-inline-start:3px solid #c49b68;padding-inline-start:12px}ul{padding-inline-start:20px;overflow-wrap:anywhere}footer{font-size:13px;color:var(--muted);padding:14px 0}@media(max-width:600px){.grid{grid-template-columns:1fr}main{padding:15px}article{padding:16px}}
-</style></head><body><main><header><div class="brand">MAGIC <b>PHONE</b></div><button id="theme">تغییر تم</button></header><div class="flex"><h1>آزمایشگاه مسیرهای صوتی</h1><span class="chip" id="connection">در حال بررسی وضعیت</span></div><p class="hint">نسخه توسعه 0.3.0 — اتصال به Magic Core عمداً غیرفعال است. صدا فقط در خود ویندوز پردازش می‌شود.</p>
-<article><h2>دستگاه‌های صوتی ویندوز</h2><p class="hint">ابتدا دستگاه‌ها را شناسایی کن. این کار صدا را ضبط نمی‌کند و تنظیمات ویندوز را تغییر نمی‌دهد.</p><button id="scan">شناسایی دستگاه‌ها</button><p class="hint" role="status" id="scanStatus">هنوز بررسی نشده است.</p><div class="grid"><div><h2>خروجی‌ها و ورودی‌ها</h2><ul id="devices"></ul></div><div><h2>برنامه‌های دارای جلسه صوتی</h2><ul id="sessions"></ul></div></div></article>
-<article><h2>مسیر آزمایشی A</h2><p class="hint">انتقال از دستگاه ورودی یا ترکیب صدای یک خروجی ویندوز به خروجی دیگر؛ این گزینه صدای یک برنامه خاص را جدا نمی‌کند.</p><div class="grid"><div><label for="sourceKind">نوع منبع</label><select id="sourceKind"><option value="input">میکروفون / ورودی</option><option value="loopback">ترکیب صدای خروجی (Loopback)</option></select><label for="source">دستگاه مبدأ</label><select id="source"></select></div><div><label for="target">دستگاه خروجی مقصد</label><select id="target"></select></div></div><div class="row" style="margin-top:16px"><button class="primary" id="start" disabled>شروع انتقال</button><button id="stop" disabled>توقف انتقال</button><button id="refresh">وضعیت مسیر</button></div><p id="routeStatus" role="status" class="hint">اتصال غیرفعال است.</p><p class="warning hint">هشدار: انتقال صدای خروجی به همان زنجیره می‌تواند باعث فیدبک شود. برای استفاده به‌عنوان میکروفون برنامه دیگر، درایور مجازی معتبر و انتخاب آن در برنامه مقصد لازم است. نسخه آزمایشی فقط پس از فعال‌سازی صریح توسط توسعه‌دهنده اجرا می‌شود.</p></article><footer>Magic Phone • Local-first • بدون ارسال صوت به سرور و بدون اتصال Magic Core</footer></main>
+<!doctype html>
+<html lang="fa" dir="rtl" data-theme="dark">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Magic Phone | مسیریابی دوطرفه</title>
+<style>
+:root{color-scheme:dark;--bg:#141216;--panel:#242126;--line:#453c47;--ink:#f9f4fb;--sub:#cbbfd0;--accent:#b18af9;--violet:#6d39ba;--tint:#33223e;--warn:#e6b06d;--good:#7ddeba}
+:root[data-theme="light"]{color-scheme:light;--bg:#f8f7fa;--panel:#fff;--line:#e6dae9;--ink:#27202b;--sub:#645968;--accent:#7140b5;--violet:#7042b8;--tint:#f4eafa;--warn:#936221;--good:#1b8157}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.8 Vazirmatn,Tahoma,Arial,sans-serif}main{max-width:1050px;margin:0 auto;padding:24px 20px 44px}
+.header,.line,.actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.header{justify-content:space-between}.logo{font-weight:900;font-size:23px;direction:ltr;letter-spacing:.4px}.logo strong{color:var(--accent)}button,select{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:12px;padding:9px 12px}button{cursor:pointer}button.primary{background:var(--violet);color:white;border-color:transparent;font-weight:700}button.warning{border-color:var(--warn);color:var(--ink)}button:disabled{cursor:not-allowed;opacity:.48}button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}h1{font-size:clamp(25px,4vw,34px);margin:16px 0 0}h2{font-size:19px;margin:0 0 8px}h3{font-size:15px;margin:0 0 6px}.muted{font-size:13px;color:var(--sub);line-height:1.85}.pill{padding:5px 12px;border:1px solid var(--line);border-radius:24px;font-size:12px}.lead{margin:2px 0 20px}.surface{margin-top:16px;padding:22px;border-radius:20px;border:1px solid var(--line);background:radial-gradient(ellipse 95% 110% at 100% 0,var(--tint),transparent 75%),var(--panel);box-shadow:0 10px 32px #00000012}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.grid .surface{margin:0}.route-head{display:flex;justify-content:space-between;align-items:start;gap:8px}.tag{font-size:12px;padding:2px 9px;background:var(--tint);color:var(--accent);border-radius:10px}label{display:block;font-size:13px;margin:12px 0 5px}select{width:100%;min-width:0}select:disabled{opacity:.58}.route-arrow{color:var(--accent);font-weight:700;text-align:center;margin:10px 0}.actions{margin-top:14px}.status{border-inline-start:3px solid var(--accent);padding-inline-start:10px;margin:14px 0 0;min-height:25px}.warning-text{border-inline-start:3px solid var(--warn);padding-inline-start:12px;margin:10px 0}.devices{max-height:240px;overflow:auto;overflow-wrap:anywhere;padding-inline-start:18px;font-size:13px}li{padding-block:3px}.caption{color:var(--sub);font-size:12px;margin-top:16px}.center{justify-content:space-between}.visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}@media(max-width:700px){.grid{grid-template-columns:1fr}.surface{padding:17px}main{padding:18px 13px 28px}.actions>button{flex:1}}
+</style>
+</head>
+<body><main>
+<header class="header"><div class="logo">MAGIC <strong>PHONE</strong></div><button type="button" id="theme">تغییر تم</button></header>
+<div class="header"><h1>اتصال صوتی دو مسیر</h1><span id="connection" class="pill" role="status">در حال بررسی Agent</span></div>
+<p class="lead muted">نسخه پنل 0.4.0 / Agent 0.3.0 • بدون اتصال Magic Core • هیچ مسیر صوتی به‌صورت خودکار فعال نمی‌شود.</p>
+<section class="surface" aria-labelledby="inventoryTitle"><div class="header"><div><h2 id="inventoryTitle">شناسایی دستگاه‌های ویندوز</h2><p class="muted">شناسایی فقط با کلیک شما انجام می‌شود؛ برنامه‌ها و دستگاه‌ها تغییر نمی‌کنند.</p></div><button type="button" id="scan">شناسایی دستگاه‌ها</button></div><p id="scanStatus" class="muted" role="status">هنوز بررسی نشده است.</p><div class="grid"><div><h3>ورودی‌ها و خروجی‌ها</h3><ul id="devices" class="devices"></ul></div><div><h3>جلسات صوتی برنامه‌ها</h3><ul id="sessions" class="devices"></ul></div></div></section>
+<div class="grid" style="margin-top:16px">
+<section class="surface" aria-labelledby="titleA"><div class="route-head"><div><h2 id="titleA">مسیر A — رفت</h2><p class="muted">انتقال مستقل یک‌طرفه از مبدأ A به خروجی A</p></div><span class="tag">A</span></div>
+<label for="sourceKindA">نوع مبدأ</label><select id="sourceKindA"><option value="input">میکروفون / ورودی</option><option value="loopback">ترکیب خروجی (Loopback)</option></select>
+<label for="sourceA">دستگاه مبدأ</label><select id="sourceA"><option value="">ابتدا شناسایی کنید</option></select><div class="route-arrow" aria-hidden="true">↓</div>
+<label for="targetA">دستگاه مقصد</label><select id="targetA"><option value="">ابتدا شناسایی کنید</option></select>
+<div class="actions"><button class="primary" type="button" id="startA" disabled>شروع A</button><button type="button" id="stopA" disabled>توقف A</button></div><p class="status muted" role="status" id="statusA">وضعیت بررسی نشده است.</p></section>
+<section class="surface" aria-labelledby="titleB"><div class="route-head"><div><h2 id="titleB">مسیر B — برگشت</h2><p class="muted">انتقال مستقل یک‌طرفه از مبدأ B به خروجی B</p></div><span class="tag">B</span></div>
+<label for="sourceKindB">نوع مبدأ</label><select id="sourceKindB"><option value="input">میکروفون / ورودی</option><option value="loopback">ترکیب خروجی (Loopback)</option></select>
+<label for="sourceB">دستگاه مبدأ</label><select id="sourceB"><option value="">ابتدا شناسایی کنید</option></select><div class="route-arrow" aria-hidden="true">↓</div>
+<label for="targetB">دستگاه مقصد</label><select id="targetB"><option value="">ابتدا شناسایی کنید</option></select>
+<div class="actions"><button class="primary" type="button" id="startB" disabled>شروع B</button><button type="button" id="stopB" disabled>توقف B</button></div><p class="status muted" role="status" id="statusB">وضعیت بررسی نشده است.</p></section>
+</div>
+<section class="surface"><div class="header center"><div><h2>کنترل مشترک</h2><p class="muted">برای هر مسیر شروع و توقف مستقل است. «توقف هر دو» هیچ مسیر تازه‌ای ایجاد نمی‌کند.</p></div><div class="actions"><button id="refresh" type="button">به‌روزرسانی وضعیت</button><button id="stopBoth" class="warning" type="button" disabled>توقف هر دو مسیر</button></div></div><p id="globalStatus" class="muted" role="status">منتظر اتصال Agent.</p><p class="warning-text muted">هشدار: Loopback صدای <strong>کل خروجی دستگاه</strong> را منتقل می‌کند، نه فقط یک برنامه. برای استفاده به‌عنوان میکروفون برنامه دیگر، دستگاه مجازی معتبر و انتخاب آن در برنامه مقصد لازم است. فعلاً در تست‌ها از مسیرهای ایمن استفاده کنید.</p></section>
+<footer class="caption">Magic Phone • پردازش محلی • بدون ضبط، دانلود یا ارسال صدا به سرور • موتور WASAPI فقط با فعال‌سازی آزمایشی توسعه‌دهنده</footer>
+</main>
 <script>
-'use strict';const el=id=>document.getElementById(id);let inv=null,token='',enabled=false,active=false;const settingsKey='magic-phone.theme.v030';
-function append(li,text){const n=document.createElement('li');n.textContent=text;li.append(n)}
-function updateSources(){const kind=el('sourceKind').value,from=el('source'),to=el('target');const oldFrom=from.value,oldTo=to.value;from.replaceChildren();to.replaceChildren();if(inv?.endpoints){for(const e of inv.endpoints){const name=e.name||e.id;if((kind==='input'&&e.direction==='input')||(kind==='loopback'&&e.direction==='output')){const opt=document.createElement('option');opt.value=e.id;opt.textContent=name;from.append(opt)}if(e.direction==='output'){const opt=document.createElement('option');opt.value=e.id;opt.textContent=name;to.append(opt)}}}if([...from.options].some(o=>o.value===oldFrom))from.value=oldFrom;if([...to.options].some(o=>o.value===oldTo))to.value=oldTo;el('start').disabled=!enabled||active||!from.value||!to.value||from.value===to.value;}
-function showError(text){el('routeStatus').textContent=text}
-async function fetchJSON(path,opts){if(location.origin!=='http://127.0.0.1:18764')throw Error('local_origin_required');const r=await fetch(path,{cache:'no-store',signal:AbortSignal.timeout(7000),...opts});if(!r.ok)throw Error('HTTP '+r.status);return r.json()}
-async function check(){try{const status=await fetchJSON('/api/status');enabled=!!status.routingAvailable;el('connection').textContent=enabled?'Agent محلی: موتور آزمایشی فعال':'Agent محلی: انتقال غیرفعال';if(enabled){const s=await fetchJSON('/api/control-session');token=s.token||'';}else{token=''}await refresh()}catch{enabled=false;el('connection').textContent='Agent در دسترس نیست'}updateSources()}
-async function scan(){el('scan').disabled=true;el('scanStatus').textContent='در حال شناسایی...';el('devices').replaceChildren();el('sessions').replaceChildren();try{inv=await fetchJSON('/api/discovery');if(!inv.available)throw Error(inv.reason||'unavailable');for(const e of inv.endpoints)append(el('devices'),(e.direction==='input'?'ورودی: ':'خروجی: ')+e.name);for(const s of inv.sessions)append(el('sessions'),s.name+' · '+s.state);if(!inv.endpoints.length)append(el('devices'),'دستگاهی پیدا نشد');if(!inv.sessions.length)append(el('sessions'),'جلسه‌ای پیدا نشد');el('scanStatus').textContent=inv.endpoints.length+' دستگاه شناسایی شد.'+(inv.partial?' ممکن است اطلاعات جلسات ناقص باشد.':'');}catch{inv=null;el('scanStatus').textContent='شناسایی انجام نشد.'}finally{el('scan').disabled=false;updateSources()}}
-async function refresh(){try{const res=await fetchJSON('/api/route');const r=res.routes.find(r=>r.slot==='A');active=!!r&&['starting','running','stopping'].includes(r.status);el('routeStatus').textContent=r?'وضعیت: '+r.status+(r.error?' — '+r.error:''):'مسیری فعال نیست.'}catch{active=false;showError('وضعیت انتقال در دسترس نیست.')}el('stop').disabled=!active;updateSources()}
-async function action(which){const button=el(which);button.disabled=true;try{if(!enabled||!token)throw Error('توسعه‌دهنده باید موتور آزمایشی را فعال کند');const body=which==='stop'?{slot:'A'}:{slot:'A',sourceId:el('source').value,sourceKind:el('sourceKind').value,targetId:el('target').value};await fetchJSON('/api/route/'+which,{method:'POST',headers:{'Content-Type':'application/json','X-Magic-Token':token,'X-Magic-Control':'user-action'},body:JSON.stringify(body)});await refresh()}catch(e){await refresh();showError('عملیات ناموفق: '+String(e.message).slice(0,100))}}
-el('scan').addEventListener('click',scan);el('sourceKind').addEventListener('change',updateSources);el('source').addEventListener('change',updateSources);el('target').addEventListener('change',updateSources);el('start').addEventListener('click',()=>action('start'));el('stop').addEventListener('click',()=>action('stop'));el('refresh').addEventListener('click',refresh);
-try{if(localStorage.getItem(settingsKey)==='light')document.documentElement.dataset.theme='light'}catch{}el('theme').addEventListener('click',()=>{const d=document.documentElement.dataset;d.theme=d.theme==='light'?'dark':'light';try{localStorage.setItem(settingsKey,d.theme)}catch{}});check();
-</script></body></html>
+'use strict';
+const $=id=>document.getElementById(id);
+const base='http://127.0.0.1:18764';
+const slots=['A','B'];
+const states={A:null,B:null};
+let inventory=null,token='',enabled=false,known=false,busy=false;
+const paletteKey='magic-phone.theme.v040';
+const configKey='magic-phone.routes.v040';
+const active=r=>r&&['starting','running','stopping'].includes(r.status);
+const stoppable=r=>r&&['starting','running'].includes(r.status);
+const make=tag=>document.createElement(tag);
+function appendText(container,value){const li=make('li');li.textContent=String(value);container.append(li)}
+function safeRead(key){try{return localStorage.getItem(key)}catch{return null}}
+function safeWrite(key,value){try{localStorage.setItem(key,value)}catch{}}
+function savedProfiles(){try{const v=JSON.parse(safeRead(configKey));return v&&typeof v==='object'?v:{}}catch{return {}}}
+function sourceSpec(slot){return {slot,sourceKind:$('sourceKind'+slot).value,sourceId:$('source'+slot).value,targetId:$('target'+slot).value}}
+function persist(){const p={};for(const slot of slots)p[slot]=sourceSpec(slot);safeWrite(configKey,JSON.stringify(p))}
+function changeOptions(select,items,chosen){select.replaceChildren();if(!items.length){const o=make('option');o.value='';o.textContent='دستگاهی موجود نیست';select.append(o);return}
+ for(const item of items){const o=make('option');o.value=item.id;o.textContent=item.name||item.id;select.append(o)}
+ if(items.some(e=>e.id===chosen))select.value=chosen;
+}
+function populate(){const old=savedProfiles();for(const slot of slots){const p=old[slot]||{};
+ const src=$('source'+slot),dst=$('target'+slot),running=states[slot];
+ if(active(running)&&['input','loopback'].includes(running.sourceKind))$('sourceKind'+slot).value=running.sourceKind;
+ const currentSource=active(running)?running.sourceId:(src.value||p.sourceId),currentTarget=active(running)?running.targetId:(dst.value||p.targetId);
+ const kind=$('sourceKind'+slot).value;
+ const all=Array.isArray(inventory?.endpoints)?inventory.endpoints:[];
+ changeOptions(src,all.filter(e=>e.direction===(kind==='input'?'input':'output')),currentSource);
+ changeOptions(dst,all.filter(e=>e.direction==='output'),currentTarget);
+ }renderControls()}
+function otherSlot(slot){return slot==='A'?'B':'A'}
+function localGuard(slot){const s=sourceSpec(slot);if(!s.sourceId||!s.targetId)return 'مبدأ و مقصد را انتخاب کنید.';
+ if(s.sourceId===s.targetId)return 'مبدأ و مقصد یکسان هستند.';
+ const o=states[otherSlot(slot)];if(!active(o))return '';
+ if(o.targetId===s.targetId)return 'دستگاه مقصد در مسیر دیگر استفاده می‌شود.';
+ if(s.sourceKind==='loopback'&&o.sourceKind==='loopback'&&s.sourceId===o.targetId&&s.targetId===o.sourceId)return 'حلقه بازگشت مستقیم صدا مجاز نیست.';
+ return ''}
+const stateFa={running:'در حال انتقال',starting:'در حال راه‌اندازی',stopping:'در حال توقف',stopped:'متوقف',failed:'ناموفق'};
+function renderControls(){for(const slot of slots){const r=states[slot],isActive=active(r),guard=localGuard(slot);
+ $('start'+slot).disabled=busy||!enabled||!known||isActive||!!guard;
+ $('stop'+slot).disabled=busy||!enabled||!known||!stoppable(r);
+ for(const field of ['sourceKind','source','target'])$(field+slot).disabled=busy||isActive;
+ const text=!known?'وضعیت مسیر در دسترس نیست.':r?'وضعیت: '+(stateFa[r.status]||r.status)+(r.error?' • '+r.error:''):'مسیری فعال نیست.';
+ $('status'+slot).textContent=text+(!isActive&&guard&&inventory?' • '+guard:'');
+ }
+ $('stopBoth').disabled=busy||!enabled||!known||!slots.some(slot=>stoppable(states[slot]));
+}
+async function api(path,options={}){if(location.origin!==base)throw Error('پنل باید از Agent محلی باز شود.');
+ const r=await fetch(path,{cache:'no-store',signal:AbortSignal.timeout(8000),...options});
+ if(!r.ok){const text=await r.text().catch(()=>''),detail=text.trim().slice(0,120);throw Error(detail||'HTTP '+r.status)}return r.json()}
+function headers(){return {'Content-Type':'application/json','X-Magic-Control':'user-action','X-Magic-Token':token}}
+async function refresh(){try{const result=await api('/api/route');if(!Array.isArray(result.routes))throw Error('پاسخ نامعتبر');
+ for(const slot of slots)states[slot]=result.routes.find(r=>r.slot===slot)||null;
+ known=true;$('globalStatus').textContent='وضعیت مسیرهای A و B دریافت شد.';
+ }catch{known=false;$('globalStatus').textContent='وضعیت مسیرها در دسترس نیست؛ شروع انتقال مسدود است.'}
+ if(inventory)populate();else renderControls();return known}
+async function check(){try{const info=await api('/api/status');enabled=info.routingAvailable===true;
+ $('connection').textContent=enabled?'Agent متصل • موتور آزمایشی فعال':'Agent متصل • انتقال آزمایشی غیرفعال';
+ if(enabled){const auth=await api('/api/control-session');token=typeof auth.token==='string'?auth.token:'';if(!token)throw Error('توکن محلی دریافت نشد');}
+ else token='';await refresh();
+ }catch{enabled=false;token='';known=false;$('connection').textContent='Agent در دسترس نیست';$('globalStatus').textContent='Agent در دسترس نیست.';renderControls()}}
+async function scan(){const btn=$('scan');btn.disabled=true;$('scanStatus').textContent='در حال شناسایی دستگاه‌ها...';$('devices').replaceChildren();$('sessions').replaceChildren();
+ try{const d=await api('/api/discovery');if(!d.available||!Array.isArray(d.endpoints)||!Array.isArray(d.sessions))throw Error('inventory_unavailable');
+ inventory=d;for(const e of d.endpoints)appendText($('devices'),(e.direction==='input'?'ورودی: ':'خروجی: ')+(e.name||e.id));
+ for(const s of d.sessions)appendText($('sessions'),s.name+' • '+s.state);
+ if(!d.endpoints.length)appendText($('devices'),'دستگاهی پیدا نشد');if(!d.sessions.length)appendText($('sessions'),'جلسه صوتی پیدا نشد');
+ $('scanStatus').textContent=d.endpoints.length+' دستگاه شناسایی شد.'+(d.partial?' نتیجه ممکن است ناقص باشد.':'');
+ }catch{inventory=null;$('scanStatus').textContent='شناسایی دستگاه‌های ویندوز ناموفق بود.'}
+ finally{btn.disabled=false;populate()}}
+async function send(slot,verb){if(busy||!enabled||!token||!known)return;
+ if(verb==='start'&&(active(states[slot])||localGuard(slot)))return;
+ if(verb==='stop'&&!stoppable(states[slot]))return;
+ busy=true;renderControls();try{const body=verb==='stop'?{slot}:sourceSpec(slot);
+ await api('/api/route/'+verb,{method:'POST',headers:headers(),body:JSON.stringify(body)});
+ await refresh();$('globalStatus').textContent='درخواست '+(verb==='start'?'شروع ':'توقف ')+slot+' ارسال شد؛ وضعیت جاری را بررسی کنید.';
+ }catch(e){await refresh();$('globalStatus').textContent='عملیات '+slot+' ناموفق بود: '+String(e.message).slice(0,130)}
+ finally{busy=false;renderControls()}}
+async function stopBoth(){if(busy||!enabled||!token||!known)return;const toStop=slots.filter(slot=>stoppable(states[slot]));if(!toStop.length)return;
+ busy=true;renderControls();const failed=[];
+ try{for(const slot of toStop){try{await api('/api/route/stop',{method:'POST',headers:headers(),body:JSON.stringify({slot})})}catch(e){failed.push(slot)}}
+ const confirmed=await refresh();$('globalStatus').textContent=failed.length?'توقف همه مسیرها تأیید نشد؛ مسیرهای '+failed.join('، ')+' را دوباره بررسی کنید.':!confirmed?'درخواست توقف ارسال شد اما وضعیت نهایی قابل تأیید نیست.':'درخواست توقف همه مسیرهای فعال ارسال شد؛ وضعیت مسیرها را بررسی کنید.';
+ }finally{busy=false;renderControls()}}
+for(const slot of slots){$('sourceKind'+slot).addEventListener('change',()=>{const src=$('source'+slot);src.value='';populate();persist()});
+ $('source'+slot).addEventListener('change',()=>{persist();renderControls()});$('target'+slot).addEventListener('change',()=>{persist();renderControls()});
+ $('start'+slot).addEventListener('click',()=>send(slot,'start'));$('stop'+slot).addEventListener('click',()=>send(slot,'stop'));
+}
+$('scan').addEventListener('click',scan);$('refresh').addEventListener('click',refresh);$('stopBoth').addEventListener('click',stopBoth);
+try{const p=savedProfiles();for(const slot of slots)if(['input','loopback'].includes(p[slot]?.sourceKind))$('sourceKind'+slot).value=p[slot].sourceKind}catch{}
+if(safeRead(paletteKey)==='light')document.documentElement.dataset.theme='light';
+$('theme').addEventListener('click',()=>{const d=document.documentElement.dataset;d.theme=d.theme==='dark'?'light':'dark';safeWrite(paletteKey,d.theme)});
+populate();check();
+</script>
+</body></html>
