@@ -1,11 +1,15 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"encoding/json"
 	"log"
+	"net"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
@@ -57,7 +61,7 @@ func handlerWithManager(provider func() inventory, m *routeManager) http.Handler
 			}
 			enabled := m != nil && m.enabled
 			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(map[string]any{"version": "0.3.0", "mode": "local-preview", "routingAvailable": enabled, "captureActive": m != nil && routeActive(m)})
+			_ = json.NewEncoder(w).Encode(map[string]any{"version": "0.5.0", "mode": "local-preview", "routingAvailable": enabled, "captureActive": m != nil && routeActive(m)})
 		case "/api/discovery":
 			if r.Method != "GET" {
 				http.Error(w, "Method not allowed", 405)
@@ -84,7 +88,27 @@ func routeActive(m *routeManager) bool {
 	return false
 }
 func main() {
-	server := &http.Server{Addr: address, Handler: handler(), ReadHeaderTimeout: 3 * time.Second, ReadTimeout: 5 * time.Second, WriteTimeout: 6 * time.Second, IdleTimeout: 30 * time.Second, MaxHeaderBytes: 8192}
-	log.Printf("Magic Phone preview: http://%s", address)
-	log.Fatal(server.ListenAndServe())
+	m := newRouteManager(os.Getenv("MAGIC_PHONE_EXPERIMENTAL_AUDIO") == "1", runAudioRoute, discoverAudio)
+	server := &http.Server{Addr: address, Handler: handlerWithManager(discoverAudio, m), ReadHeaderTimeout: 3 * time.Second, ReadTimeout: 5 * time.Second, WriteTimeout: 6 * time.Second, IdleTimeout: 30 * time.Second, MaxHeaderBytes: 8192}
+	ln, err := net.Listen("tcp", address)
+	if err != nil {
+		log.Fatal("Cannot open local port: ", err)
+	}
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	go func() {
+		<-ctx.Done()
+		limit, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := server.Shutdown(limit); err != nil {
+			log.Printf("HTTP stop: %v", err)
+		}
+	}()
+	log.Printf("Magic Phone test panel: http://%s", address)
+	go openBrowser("http://" + address + "/")
+	err = server.Serve(ln)
+	m.stopAll()
+	if err != nil && err != http.ErrServerClosed {
+		log.Fatal(err)
+	}
 }

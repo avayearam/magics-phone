@@ -42,3 +42,14 @@ The environment variable `MAGIC_PHONE_EXPERIMENTAL_AUDIO=1` activates experiment
 No Python, hidden PowerShell installer, third-party driver download, cloud connection, or Magic Core credentials are needed for the current agent. The local control endpoints verify origin, token and explicit UI action. Source audio is not uploaded anywhere. Do not commit personal contacts, pairing secrets or logs.
 
 **Magic Core integration is deferred.**
+
+## v0.5.0 — Windows discovery pilot
+
+- Prevent retrying route slots or reusing render targets while a timed-out native audio worker is still alive.
+- Allow cancelling failed-start workers without disguising their failure status.
+- Open the local panel in the default browser after the Agent binds the loopback port (Windows ShellExecuteW; no PowerShell).
+- Graceful Ctrl+C / SIGTERM shutdown attempts to stop both routing workers.
+- Audio transfer still defaults to **off**. Portable Windows x64 diagnostic binaries are **unsigned and not yet Windows-runtime / Defender verified**; no official setup released.
+- Independent source regression tests: `go test -race -count=1 -v ./...`; simulated UI test: `node web/dual-route.test.cjs`.
+
+See [Persian v0.5 lab notes](docs/WINDOWS_LAB_V0.5_FA.md). Magic Core remains deferred.

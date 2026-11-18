@@ -15,8 +15,6 @@ import (
 	"time"
 )
 
-// A route copies one endpoint's audio stream into a distinct render endpoint.
-// Loopback captures the COMPLETE endpoint mix, not a particular application.
 type routeSpec struct {
 	Slot       string `json:"slot"`
 	SourceID   string `json:"sourceId"`
@@ -35,12 +33,13 @@ type routeJob struct {
 }
 type routeRunner func(context.Context, routeSpec, chan<- error)
 type routeManager struct {
-	mu        sync.Mutex
-	jobs      map[string]*routeJob
-	enabled   bool
-	token     string
-	runner    routeRunner
-	inventory func() inventory
+	mu             sync.Mutex
+	jobs           map[string]*routeJob
+	enabled        bool
+	token          string
+	runner         routeRunner
+	inventory      func() inventory
+	startupTimeout time.Duration
 }
 
 var errUnsupported = errors.New("unsupported_platform")
@@ -50,7 +49,7 @@ func newRouteManager(enabled bool, runner routeRunner, provider func() inventory
 	if _, err := rand.Read(secret); err != nil {
 		panic("Cannot initialize local control security")
 	}
-	return &routeManager{jobs: make(map[string]*routeJob), enabled: enabled, token: hex.EncodeToString(secret), runner: runner, inventory: provider}
+	return &routeManager{jobs: make(map[string]*routeJob), enabled: enabled, token: hex.EncodeToString(secret), runner: runner, inventory: provider, startupTimeout: 4 * time.Second}
 }
 func validSpec(s routeSpec, data inventory) error {
 	if s.Slot != "A" && s.Slot != "B" {
@@ -88,8 +87,8 @@ func (m *routeManager) snapshot() []routeInfo {
 	defer m.mu.Unlock()
 	result := make([]routeInfo, 0, 2)
 	for _, slot := range []string{"A", "B"} {
-		if job := m.jobs[slot]; job != nil {
-			result = append(result, job.routeInfo)
+		if j := m.jobs[slot]; j != nil {
+			result = append(result, j.routeInfo)
 		}
 	}
 	return result
@@ -102,13 +101,21 @@ func (m *routeManager) start(spec routeSpec) error {
 		return err
 	}
 	m.mu.Lock()
-	if old := m.jobs[spec.Slot]; old != nil && (old.Status == "running" || old.Status == "starting" || old.Status == "stopping") {
-		m.mu.Unlock()
-		return errors.New("slot_busy")
+	// A slot cannot be recycled until the *previous native audio worker* has exited.
+	// Startup timeout or an early failure changes status, not the worker's lifetime.
+	if old := m.jobs[spec.Slot]; old != nil {
+		select {
+		case <-old.done:
+		default:
+			m.mu.Unlock()
+			return errors.New("slot_busy")
+		}
 	}
 	for _, other := range m.jobs {
-		if other.Status != "running" && other.Status != "starting" && other.Status != "stopping" {
+		select {
+		case <-other.done:
 			continue
+		default:
 		}
 		if other.TargetID == spec.TargetID {
 			m.mu.Unlock()
@@ -140,7 +147,7 @@ func (m *routeManager) start(spec routeSpec) error {
 		m.mu.Unlock()
 		close(job.done)
 	}()
-	timer := time.NewTimer(4 * time.Second)
+	timer := time.NewTimer(m.startupTimeout)
 	defer timer.Stop()
 	select {
 	case err := <-ready:
@@ -150,9 +157,18 @@ func (m *routeManager) start(spec routeSpec) error {
 				job.Status = "failed"
 				job.Error = err.Error()
 				cancel()
-			} else if job.Status == "starting" {
-				job.Status = "running"
 			}
+			if err == nil {
+				if job.Status == "starting" {
+					job.Status = "running"
+				} else {
+					err = errors.New("engine_not_running")
+					cancel()
+				}
+			}
+		} else {
+			err = errors.New("route_replaced_during_startup")
+			cancel()
 		}
 		m.mu.Unlock()
 		return err
@@ -170,18 +186,21 @@ func (m *routeManager) start(spec routeSpec) error {
 func (m *routeManager) stop(slot string) error {
 	m.mu.Lock()
 	job := m.jobs[slot]
-	if job == nil || (job.Status != "starting" && job.Status != "running") {
+	if job == nil || (job.Status != "starting" && job.Status != "running" && job.Status != "failed") {
 		m.mu.Unlock()
 		return errors.New("route_not_active")
 	}
-	job.Status = "stopping"
+	keepFailure := job.Status == "failed"
+	if !keepFailure {
+		job.Status = "stopping"
+	}
 	job.cancel()
 	done := job.done
 	m.mu.Unlock()
 	select {
 	case <-done:
 		m.mu.Lock()
-		if m.jobs[slot] == job {
+		if m.jobs[slot] == job && !keepFailure {
 			job.Status = "stopped"
 		}
 		m.mu.Unlock()
