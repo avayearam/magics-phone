@@ -13,8 +13,8 @@ android {
         applicationId = "site.magics.phone.agent"
         minSdk = 30
         targetSdk = 36
-        versionCode = 9
-        versionName = "0.5.1"
+        versionCode = 10
+        versionName = "0.5.2"
         // Filter all transitive JNI libraries as well as PJSIP's own module outputs.
         ndk {
             //abiFilters += listOf("arm64-v8a", "x86_64")
@@ -53,6 +53,9 @@ android {
     }
     packaging {
         resources.excludes += "META-INF/*.kotlin_module"
+        // Prefer compressed arm64 JNI in the distribution APK (smaller, extracted on install).
+        // Avoid distributing a 40MB uncompressed native payload to slow mobile networks.
+        jniLibs.useLegacyPackaging = true
     }
 }
 
