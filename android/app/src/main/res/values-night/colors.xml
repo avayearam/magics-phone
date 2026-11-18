@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="background">#121215</color>
+    <color name="surface">#202025</color>
+    <color name="surface_soft">#282830</color>
+    <color name="text_primary">#F8F7FC</color>
+    <color name="text_secondary">#B9B5C5</color>
+    <color name="primary">#8D5BFE</color>
+    <color name="secondary">#52D3DC</color>
+    <color name="success">#58D0A8</color>
+    <color name="stroke">#403C49</color>
+</resources>
