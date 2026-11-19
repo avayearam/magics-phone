@@ -77,7 +77,7 @@ internal class MagicPhoneApi {
                 add(MagicPhoneCallMessage(row.optString("role"),row.optString("text"),row.optString("created_at")))
             }
         }
-        return MagicPhoneCall(item.optString("session_key"),item.optString("caller_number"),
+        return MagicPhoneCall(item.optString("session_key"),item.optString("caller_number").takeUnless{it=="null"}.orEmpty(),
             item.optString("agent_name"),item.optString("started_at"),item.optString("ended_at"),
             item.optInt("duration_seconds"),item.optString("summary"),messages)
     }

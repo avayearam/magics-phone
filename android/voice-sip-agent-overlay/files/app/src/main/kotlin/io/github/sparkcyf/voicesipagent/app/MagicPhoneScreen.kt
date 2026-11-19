@@ -69,7 +69,7 @@ internal fun MagicPhoneScreen(rt:GatewayRuntime,modifier:Modifier=Modifier,
     val audio by rt.callAudioStatus.collectAsState()
     val events by AppLog.tail.collectAsState()
     val idle=h.calls.count==0 && h.session==null
-    val canEnable=settings.takeover && h.gatewayRunning && tokenReady && idle && !h.settingsPending
+    val canEnable=settings.takeover && h.gatewayRunning && tokenReady && remote?.apiKeyConfigured==true && idle && !h.settingsPending
 
     var tab by rememberSaveable{mutableIntStateOf(0)}
     var tokenDraft by remember{mutableStateOf("")}
@@ -96,7 +96,7 @@ internal fun MagicPhoneScreen(rt:GatewayRuntime,modifier:Modifier=Modifier,
     }
 
     LaunchedEffect(tokenReady,tab) {
-        if(tokenReady && tab in 1..3) {
+        if(tokenReady) {
             val token=tokenStore.load()
             if(token!=null) {
                 busy=true
@@ -116,7 +116,7 @@ internal fun MagicPhoneScreen(rt:GatewayRuntime,modifier:Modifier=Modifier,
             confirmClear=false
             tokenStore.load()?.let{token->scope.launch{
                 busy=true
-                try{withContext(Dispatchers.IO){api.clearApiKey(token)};remote=remote?.copy(apiKeyConfigured=false,apiKeyHint="");feedback="کلید این دستگاه حذف شد."}
+                try{withContext(Dispatchers.IO){api.clearApiKey(token)};remote=remote?.copy(apiKeyConfigured=false,apiKeyHint="");if(live)rt.setGeminiAgentEnabled(false);feedback="کلید این دستگاه حذف شد."}
                 catch(e:Exception){feedback=e.message ?: "حذف کلید ناموفق بود."}
                 finally{busy=false}
             }}
@@ -162,7 +162,7 @@ internal fun MagicPhoneScreen(rt:GatewayRuntime,modifier:Modifier=Modifier,
             }
         }
         when(tab) {
-            0 -> CallTab(rt,h,settings,live,tokenReady,liveStatus,audio,events,idle,canEnable,tokenDraft,{tokenDraft=it},
+            0 -> CallTab(rt,h,settings,live,tokenReady,remote?.apiKeyConfigured==true,liveStatus,audio,events,idle,canEnable,tokenDraft,{tokenDraft=it},
                 diagnostic,{diagnostic=it},setTakeover,chooseDialer,roleMessage)
             1 -> AgentTab(remote,tokenReady,busy,feedback,promptDraft,{promptDraft=it},voiceDraft,{voiceDraft=it},
                 languageDraft,{languageDraft=it},voiceMenu,{voiceMenu=it},languageMenu,{languageMenu=it},
@@ -178,7 +178,7 @@ internal fun MagicPhoneScreen(rt:GatewayRuntime,modifier:Modifier=Modifier,
 
 @Composable
 private fun CallTab(rt:GatewayRuntime,h:HealthState,settings:GatewaySettings,live:Boolean,tokenReady:Boolean,
-    liveStatus:String,audio:CallAudioStatus,events:List<String>,idle:Boolean,canEnable:Boolean,
+    apiKeyConfigured:Boolean,liveStatus:String,audio:CallAudioStatus,events:List<String>,idle:Boolean,canEnable:Boolean,
     tokenDraft:String,onToken:(String)->Unit,diagnostic:Boolean,onDiagnostic:(Boolean)->Unit,
     setTakeover:(Boolean)->Unit,chooseDialer:()->Unit,roleMessage:String) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),verticalArrangement=Arrangement.spacedBy(14.dp)) {
@@ -189,6 +189,8 @@ private fun CallTab(rt:GatewayRuntime,h:HealthState,settings:GatewaySettings,liv
             Indicator("دسترسی مدیریت تماس",h.callAccessReady)
             Indicator("دسترسی به صدای تماس",h.audioReady)
             Indicator("توکن اختصاصی دستگاه",tokenReady)
+            Indicator("کلید API گوگل",apiKeyConfigured)
+            if(tokenReady && !apiKeyConfigured) Text("برای فعال‌کردن پاسخ‌گویی، ابتدا کلید API را در تب «اتصال API» ثبت کن.",color=Color(0xFFA72C53),style=MaterialTheme.typography.bodySmall)
             if(h.shizuku==ShizukuConnector.State.PERMISSION_REQUIRED || h.shizuku==ShizukuConnector.State.PERMISSION_DENIED)
                 Button(onClick={rt.shizuku.requestPermission()}){Text("اجازه شیزوکو")}
             OutlinedButton(onClick=rt.runSetup(),enabled=settings.takeover && idle){Text("بررسی مجدد دسترسی‌ها")}
