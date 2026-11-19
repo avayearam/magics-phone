@@ -193,7 +193,7 @@ private fun CallTab(rt:GatewayRuntime,h:HealthState,settings:GatewaySettings,liv
             if(tokenReady && !apiKeyConfigured) Text("برای فعال‌کردن پاسخ‌گویی، ابتدا کلید API را در تب «اتصال API» ثبت کن.",color=Color(0xFFA72C53),style=MaterialTheme.typography.bodySmall)
             if(h.shizuku==ShizukuConnector.State.PERMISSION_REQUIRED || h.shizuku==ShizukuConnector.State.PERMISSION_DENIED)
                 Button(onClick={rt.shizuku.requestPermission()}){Text("اجازه شیزوکو")}
-            OutlinedButton(onClick=rt.runSetup(),enabled=settings.takeover && idle){Text("بررسی مجدد دسترسی‌ها")}
+            OutlinedButton(onClick={rt.runSetup()},enabled=settings.takeover && idle){Text("بررسی مجدد دسترسی‌ها")}
             if(h.holdsDialer || h.dialerChangeFailed)OutlinedButton(onClick=chooseDialer){Text("تنظیم برنامه تماس پیش‌فرض")}
             if(roleMessage.isNotBlank())Text(roleMessage,color=Color(0xFFA72C53))
         }
