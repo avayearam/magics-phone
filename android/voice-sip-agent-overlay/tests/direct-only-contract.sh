@@ -14,10 +14,13 @@ grep -Fq '.url(MagicLiveHandshake.URL)' "$ENDPOINT"
 grep -Fq 'builder.header("X-Magic-Phone-Caller", it)' "$ENDPOINT"
 grep -Fq 'fun normalizeCallerNumber(value: String?): String?' "$ENDPOINT"
 grep -Fq 'Regex("^mpa_[a-f0-9]{48}$")' "$TOKEN"
-grep -Fq '0.5.4-direct' "$GRADLE"
-grep -Fq 'versionCode = 12' "$GRADLE"
+grep -Fq '0.5.5-direct' "$GRADLE"
+grep -Fq 'versionCode = 13' "$GRADLE"
 if grep -Eq 'phone[.]magics[.]site|magic-auth[.]|LEGACY_URL|BRIDGE_ACCESS_TOKEN|Cloudflare' "$ENDPOINT"; then
   echo "FAILED: legacy Worker reference in Android endpoint" >&2; exit 1
 fi
 grep -Fq 'توکن اختصاصی دستگاه' "$SCREEN"
+grep -Fq 'https://ai.magics.site/call/device-api.php' "$ROOT/files/app/src/main/kotlin/io/github/sparkcyf/voicesipagent/app/MagicPhoneApi.kt"
+grep -Fq 'کلید API این دستگاه' "$SCREEN"
+grep -Fq 'تماس‌گیرندگان' "$SCREEN"
 echo "PASS: Android direct-only token and endpoint contracts"

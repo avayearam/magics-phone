@@ -533,7 +533,7 @@ class GatewayRuntime private constructor(context: Context) {
             h.shizuku != ShizukuConnector.State.CONNECTED -> shizukuProblem(h.shizuku)
             !access -> c.accessProblem!!
             !audio -> "Selected call audio unavailable: ${h.privilegedDetail}"
-            !h.loopbackTest && _geminiAgentEnabled.value && !geminiTokenStore.hasToken() -> "Gemini Live Worker token not configured"
+            !h.loopbackTest && _geminiAgentEnabled.value && !geminiTokenStore.hasToken() -> "Gemini Live device token not configured"
             !h.loopbackTest && !_geminiAgentEnabled.value && !h.sip.ready -> "SIP unavailable: ${h.sip.detail}"
             else -> "Gateway ready"
         }
@@ -925,9 +925,9 @@ class GatewayRuntime private constructor(context: Context) {
         }
         if (sideB == null) {
             bridge = null
-            val reason = if (geminiMode) "Gemini Live Worker token not configured" else "SIP not configured"
+            val reason = if (geminiMode) "Gemini Live device token not configured" else "SIP not configured"
             AppLog.i("bridge idle: $reason")
-            if (geminiMode) _geminiStatus.value = "ابتدا رمز دسترسی Worker را ذخیره کن."
+            if (geminiMode) _geminiStatus.value = "ابتدا توکن دستگاه را ذخیره کن."
             return
         }
         val inboundTarget = IncomingCallTargetPolicy.resolve(
@@ -1086,8 +1086,8 @@ class GatewayRuntime private constructor(context: Context) {
         try {
             geminiTokenStore.save(token.trim())
             _geminiTokenConfigured.value = true
-            _geminiStatus.value = "رمز دسترسی Worker با Android Keystore به‌صورت امن ذخیره شد."
-            AppLog.i("Gemini Live Worker token saved (value hidden)")
+            _geminiStatus.value = "توکن دستگاه با Android Keystore به‌صورت امن ذخیره شد."
+            AppLog.i("Gemini Live device token saved (value hidden)")
             if (_geminiAgentEnabled.value && !hasActiveWork()) {
                 geminiEndpoint?.close()
                 geminiEndpoint = null
@@ -1096,13 +1096,13 @@ class GatewayRuntime private constructor(context: Context) {
             }
         } catch (error: Exception) {
             _geminiStatus.value = "ذخیره رمز ناموفق بود؛ مقدار واردشده را بررسی کن."
-            AppLog.w("Gemini Live Worker token save failed", error)
+            AppLog.w("Gemini Live device token save failed", error)
         }
     }
 
     fun setGeminiAgentEnabled(on: Boolean) = worker.execute {
         if (on && !geminiTokenStore.hasToken()) {
-            _geminiStatus.value = "ابتدا رمز دسترسی Worker را ذخیره کن."
+            _geminiStatus.value = "ابتدا توکن دستگاه را ذخیره کن."
             return@execute
         }
         if (on && (!gatewayEnabled || !_health.value.takeover)) {

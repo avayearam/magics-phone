@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger
  * A direct Gemini Live call endpoint. It replaces the SIP side of CallBridge;
  * the cellular endpoint and its Shizuku audio path remain unchanged.
  *
- * The phone uses an agent-specific device token only. GEMINI_API_KEY stays on the origin server.
+ * The phone uses an agent-specific device token only. The per-device Gemini API key stays encrypted on the origin server.
  * No call audio or credentials are written to logs.
  */
 internal class GeminiLiveEndpoint(
