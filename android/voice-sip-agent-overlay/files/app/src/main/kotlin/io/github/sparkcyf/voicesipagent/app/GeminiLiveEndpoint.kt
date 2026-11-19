@@ -238,7 +238,7 @@ internal class GeminiLiveEndpoint(
 
 /** Direct-origin-only handshake with no alternate endpoint. */
 internal object MagicLiveHandshake {
-    const val URL = "wss://ai.magics.site/call/ws?mode=phone"
+    const val URL = "wss://voice.magics.site/ws?mode=phone"
     const val ORIGIN = "https://ai.magics.site"
     const val PROTOCOL = "magic-phone.v1"
     private val deviceTokenPattern = Regex("^mpa_[a-f0-9]{48}$")
