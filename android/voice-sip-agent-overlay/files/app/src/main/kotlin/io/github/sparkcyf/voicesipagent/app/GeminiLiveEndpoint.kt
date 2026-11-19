@@ -234,7 +234,7 @@ internal class GeminiLiveEndpoint(
 }
 
 
-/** Direct-origin-only handshake; Cloudflare fallback intentionally removed. */
+/** Direct-origin-only handshake with no alternate endpoint. */
 internal object MagicLiveHandshake {
     const val URL = "wss://ai.magics.site/call/ws?mode=phone"
     const val ORIGIN = "https://ai.magics.site"
