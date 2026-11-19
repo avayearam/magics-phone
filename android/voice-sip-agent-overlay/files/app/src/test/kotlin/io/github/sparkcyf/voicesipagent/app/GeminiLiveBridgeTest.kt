@@ -2,6 +2,7 @@ package io.github.sparkcyf.voicesipagent.app
 
 import io.github.sparkcyf.voicesipagent.voice.PcmFormat
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.Base64
@@ -15,6 +16,14 @@ class GeminiLiveBridgeTest {
         assertEquals("https://ai.magics.site", MagicLiveHandshake.ORIGIN)
         assertTrue(MagicLiveHandshake.isDeviceToken(token))
         assertEquals(listOf("magic-phone.v1", "magic-agent.$encoded"), MagicLiveHandshake.protocols(token))
+    }
+
+    @Test fun callerNumberFromTelecomIsNormalizedAndValidated() {
+        assertEquals("+989121234567", MagicLiveHandshake.normalizeCallerNumber("+98 (912) 123-4567"))
+        assertEquals("+989121234567", MagicLiveHandshake.normalizeCallerNumber("0098 912 123 4567"))
+        assertEquals("09121234567", MagicLiveHandshake.normalizeCallerNumber("0912 123 4567"))
+        assertNull(MagicLiveHandshake.normalizeCallerNumber("anonymous"))
+        assertNull(MagicLiveHandshake.normalizeCallerNumber("12345"))
     }
 
     @Test(expected = IllegalArgumentException::class)

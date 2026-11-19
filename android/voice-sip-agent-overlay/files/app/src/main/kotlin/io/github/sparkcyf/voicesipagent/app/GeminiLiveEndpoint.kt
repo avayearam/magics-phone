@@ -107,6 +107,7 @@ internal class GeminiLiveEndpoint(
         @Volatile private var socket: WebSocket? = null
         @Volatile private var mediaPort: GeminiLiveMediaPort? = null
         @Volatile private var ended = false
+        private val callerNumber = MagicLiveHandshake.normalizeCallerNumber(caller.number)
         private val timer = Executors.newSingleThreadScheduledExecutor { r ->
             Thread(r, "gemini-live-timeout-$id").apply { isDaemon = true }
         }
@@ -119,11 +120,12 @@ internal class GeminiLiveEndpoint(
                 return
             }
             val request = try {
-                Request.Builder()
+                val builder = Request.Builder()
                     .url(MagicLiveHandshake.URL)
                     .header("Origin", MagicLiveHandshake.ORIGIN)
                     .header("Sec-WebSocket-Protocol", protocols.joinToString(", "))
-                    .build()
+                callerNumber?.let { builder.header("X-Magic-Phone-Caller", it) }
+                builder.build()
             } catch (t: Throwable) {
                 fail(HangupCause.UNAVAILABLE, "invalid WebSocket configuration")
                 return
@@ -242,6 +244,16 @@ internal object MagicLiveHandshake {
     private val deviceTokenPattern = Regex("^mpa_[a-f0-9]{48}$")
 
     fun isDeviceToken(secret: String?): Boolean = secret != null && deviceTokenPattern.matches(secret)
+
+    /** Telecom remote-party number is passed only over the authenticated TLS WebSocket. */
+    fun normalizeCallerNumber(value: String?): String? {
+        val raw = value?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+        val international = raw.startsWith("+") || raw.startsWith("00")
+        var digits = raw.filter { it in '0'..'9' }
+        if (raw.startsWith("00") && digits.startsWith("00")) digits = digits.drop(2)
+        if (digits.length !in 7..15) return null
+        return (if (international) "+" else "") + digits
+    }
 
     fun protocols(secret: String): List<String> {
         require(isDeviceToken(secret)) { "invalid device token" }

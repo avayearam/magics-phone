@@ -11,9 +11,11 @@ grep -Fq 'const val URL = "wss://ai.magics.site/call/ws?mode=phone"' "$ENDPOINT"
 grep -Fq 'return listOf(PROTOCOL, "magic-agent.$encoded")' "$ENDPOINT"
 grep -Fq 'private fun validToken(value: String?): Boolean = MagicLiveHandshake.isDeviceToken(value)' "$ENDPOINT"
 grep -Fq '.url(MagicLiveHandshake.URL)' "$ENDPOINT"
+grep -Fq 'builder.header("X-Magic-Phone-Caller", it)' "$ENDPOINT"
+grep -Fq 'fun normalizeCallerNumber(value: String?): String?' "$ENDPOINT"
 grep -Fq 'Regex("^mpa_[a-f0-9]{48}$")' "$TOKEN"
-grep -Fq '0.5.3-direct' "$GRADLE"
-grep -Fq 'versionCode = 11' "$GRADLE"
+grep -Fq '0.5.4-direct' "$GRADLE"
+grep -Fq 'versionCode = 12' "$GRADLE"
 if grep -Eq 'phone[.]magics[.]site|magic-auth[.]|LEGACY_URL|BRIDGE_ACCESS_TOKEN|Cloudflare' "$ENDPOINT"; then
   echo "FAILED: legacy Worker reference in Android endpoint" >&2; exit 1
 fi

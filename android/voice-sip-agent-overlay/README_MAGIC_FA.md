@@ -1,4 +1,4 @@
-# Magic Phone 0.5.3-direct — فقط مسیر مستقیم هاست
+# Magic Phone 0.5.4-direct — آرشیو مکالمات و مسیر مستقیم هاست
 
 این نسخه از سورس واقعی GitHub و submodule پین‌شده ساخته می‌شود؛ هیچ ZIP یا Backup مبنای Build نیست.
 
@@ -16,6 +16,11 @@
 
 نیازمند JDK 17، SDK Platform 37، NDK 28.2.13676358، SWIG و ابزارهای Native است. روش اصلی: کلون `avayearam/magics-phone` از **SHA دقیق**، init submodules، اجرای `apply.sh` (و دریافت فونت Vazirmatn با SHA معتبر)، ساخت PJSUA2 pinned native، تست Gradle و `:app:assembleDebug`. Build از GitHub Actions در مخزن عمومی `avayearam/Sobhan` اجرا می‌شود؛ لینک Artifact فقط بعد از موفقیت Build معتبر است.
 
-شناسه بسته: `site.magics.phone.agent`؛ `versionCode=11` و `versionName=0.5.3-direct`. امضای Debug runner ممکن است با APK قدیمی متفاوت باشد؛ در این صورت نصب به‌عنوان Update ممکن نیست و باید قبل از حذف نسخه قدیمی، داده‌های ضروری را بررسی کرد.
+شناسه بسته: `site.magics.phone.agent`؛ `versionCode=12` و `versionName=0.5.4-direct`. امضای Debug runner ممکن است با APK قدیمی متفاوت باشد؛ در این صورت نصب به‌عنوان Update ممکن نیست و باید قبل از حذف نسخه قدیمی، داده‌های ضروری را بررسی کرد.
 
 **Production Verification و سلامت صدا صرفاً بعد از نصب، تست دسترسی Shizuku، تأیید موفق WebSocket و تماس آزمایشی دوطرفه قابل اعلام است.**
+
+
+## آرشیو مکالمات و شناسه تماس‌گیرنده
+
+در تماس ورودی سیم‌کارت، شماره از Party مربوط به سمت دور تماس در CallBridge می‌آید؛ این Party توسط Android Telecom از Call.Details.handle ساخته می‌شود. اپ فقط شماره معتبر را در هدر X-Magic-Phone-Caller روی WebSocket احرازشده و TLS به Origin می‌فرستد. شماره در URL، لاگ یا توکن دستگاه قرار نمی‌گیرد. سرور فقط پس از اعتبارسنجی توکن دستگاه، شماره را به نشست آرشیو متصل می‌کند.

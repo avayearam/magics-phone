@@ -34,6 +34,6 @@ if [ ! -s "$APK" ]; then
   exit 3
 fi
 mkdir -p "$OUT"
-cp "$APK" "$OUT/Magic-Phone-0.5.1-debug.apk"
-sha256sum "$OUT/Magic-Phone-0.5.1-debug.apk" > "$OUT/Magic-Phone-0.5.1-debug.apk.sha256"
-echo "Built: $OUT/Magic-Phone-0.5.1-debug.apk"
+cp "$APK" "$OUT/Magic-Phone-0.5.4-debug.apk"
+sha256sum "$OUT/Magic-Phone-0.5.4-debug.apk" > "$OUT/Magic-Phone-0.5.4-debug.apk.sha256"
+echo "Built: $OUT/Magic-Phone-0.5.4-debug.apk"
