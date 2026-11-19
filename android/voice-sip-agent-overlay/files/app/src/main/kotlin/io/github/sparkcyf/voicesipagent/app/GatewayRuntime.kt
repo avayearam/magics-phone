@@ -1253,7 +1253,7 @@ class GatewayRuntime private constructor(context: Context) {
                 "keepDefaultDialer=${settings.keepDefaultDialer} muteEarpiece=${settings.muteEarpiece}")
             appendLine("shizuku=${h.shizuku} (${h.shizukuDetail})")
             appendLine("privileged=${h.privileged} ${h.privilegedDetail}")
-            appendLine("geminiLive=${_geminiAgentEnabled.value} workerToken=${geminiTokenStore.hasToken()} " +
+            appendLine("geminiLive=${_geminiAgentEnabled.value} deviceToken=${geminiTokenStore.hasToken()} " +
                 "endpoint=${geminiEndpoint?.status?.detail ?: "not initialized"}")
             appendLine("sip=${h.sip.detail} ready=${h.sip.ready} stack=${settings.sipStack.id} " +
                 "transport=${settings.sipTransport} srtp=${settings.srtp} debugLog=${settings.sipDebugLog}")

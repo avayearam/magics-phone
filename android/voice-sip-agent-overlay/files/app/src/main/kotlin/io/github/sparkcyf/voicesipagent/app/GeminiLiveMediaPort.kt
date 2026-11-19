@@ -6,7 +6,7 @@ import java.util.ArrayDeque
 import java.util.Base64
 
 /**
- * Adapts cellular PCM (8 or 16 kHz, mono PCM16LE) to the Magic Phone Worker
+ * Adapts cellular PCM (8 or 16 kHz, mono PCM16LE) to the Magic Phone direct-origin bridge
  * protocol (16 kHz input, 24 kHz output). MediaBridge calls this on the
  * cellular clock, so writeFrame must remain non-blocking.
  */

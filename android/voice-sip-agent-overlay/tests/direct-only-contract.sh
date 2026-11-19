@@ -20,6 +20,9 @@ grep -Fq 'versionCode = 14' "$GRADLE"
 if grep -Eq 'phone[.]magics[.]site|magic-auth[.]|LEGACY_URL|BRIDGE_ACCESS_TOKEN|Cloudflare' "$ENDPOINT"; then
   echo "FAILED: legacy Worker reference in Android endpoint" >&2; exit 1
 fi
+if grep -Eq 'phone[.]magics[.]site|BRIDGE_ACCESS_TOKEN|Cloudflare|Worker:' "$APP/MainActivity.kt"; then
+  echo "FAILED: stale Worker endpoint or credential label in Android UI" >&2; exit 1
+fi
 grep -Fq 'توکن اختصاصی دستگاه' "$SCREEN"
 grep -Fq 'https://ai.magics.site/call/device-api.php' "$ROOT/files/app/src/main/kotlin/io/github/sparkcyf/voicesipagent/app/MagicPhoneApi.kt"
 grep -Fq 'کلید API این دستگاه' "$SCREEN"

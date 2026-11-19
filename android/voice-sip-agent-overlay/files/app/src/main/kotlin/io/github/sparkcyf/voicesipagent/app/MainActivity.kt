@@ -181,7 +181,7 @@ private fun Screen(rt: GatewayRuntime, editor: SipSettingsDraft, modifier: Modif
             Check("Call audio access", h.audioReady)
             Check("Doze allowlisted", p?.get(HealthKeys.DOZE_ALLOWLISTED) == true)
             if (geminiAgentEnabled) {
-                Check("Gemini Live Worker token", geminiTokenConfigured,
+                Check("Gemini Live device token", geminiTokenConfigured,
                     if (geminiTokenConfigured) "Stored securely; live connection is checked when a call starts"
                     else "Not configured")
             } else {
@@ -249,14 +249,14 @@ private fun Screen(rt: GatewayRuntime, editor: SipSettingsDraft, modifier: Modif
             }
         }
         Section("دستیار تماس Gemini Live") {
-            Text("این بخش به همان Gemini Live فعلی متصل می‌شود. صدای تماس سیم‌کارت از مسیر Worker موجود به مدل زنده منتقل می‌شود؛ کلید Google روی گوشی قرار نمی‌گیرد.",
+            Text("این بخش به سرویس مستقیم Magic Phone روی هاست متصل می‌شود. صدای تماس سیم‌کارت از WebSocket مستقیم به voice.magics.site و سپس Gemini Live منتقل می‌شود؛ کلید Google روی گوشی قرار نمی‌گیرد.",
                 style = MaterialTheme.typography.bodySmall)
-            Text("Worker: wss://phone.magics.site/ws?mode=phone",
+            Text("Origin: wss://voice.magics.site/ws?mode=phone",
                 fontFamily = FontFamily.Monospace, fontSize = 11.sp)
             OutlinedTextField(
                 value = geminiTokenDraft,
                 onValueChange = { geminiTokenDraft = it },
-                label = { Text("BRIDGE_ACCESS_TOKEN") },
+                label = { Text("توکن اختصاصی دستگاه") },
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -266,8 +266,8 @@ private fun Screen(rt: GatewayRuntime, editor: SipSettingsDraft, modifier: Modif
                 onClick = { rt.saveGeminiBridgeToken(geminiTokenDraft); geminiTokenDraft = "" },
                 enabled = geminiTokenDraft.length >= 24 && h.calls.count == 0 && h.session == null,
             ) { Text("ذخیره امن رمز") }
-            Check("رمز Worker ذخیره شده", geminiTokenConfigured,
-                if (geminiTokenConfigured) "رمز با Android Keystore رمزگذاری شده است." else "رمز هنوز وارد نشده است.")
+            Check("توکن اختصاصی دستگاه ذخیره شده", geminiTokenConfigured,
+                if (geminiTokenConfigured) "توکن با Android Keystore رمزگذاری شده است." else "رمز هنوز وارد نشده است.")
             Text(geminiStatus, style = MaterialTheme.typography.bodySmall)
             Toggle(
                 "پاسخ‌گویی آزمایشی با Gemini Live",
