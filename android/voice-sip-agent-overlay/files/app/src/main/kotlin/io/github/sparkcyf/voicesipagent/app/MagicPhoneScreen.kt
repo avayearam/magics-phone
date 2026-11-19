@@ -68,6 +68,7 @@ internal fun MagicPhoneScreen(rt:GatewayRuntime,modifier:Modifier=Modifier,
     val liveStatus by rt.geminiStatusFlow.collectAsState()
     val audio by rt.callAudioStatus.collectAsState()
     val events by AppLog.tail.collectAsState()
+    var remote by remember{mutableStateOf<MagicPhoneRemoteSettings?>(null)}
     val idle=h.calls.count==0 && h.session==null
     val canEnable=settings.takeover && h.gatewayRunning && tokenReady && remote?.apiKeyConfigured==true && idle && !h.settingsPending
 
@@ -81,7 +82,6 @@ internal fun MagicPhoneScreen(rt:GatewayRuntime,modifier:Modifier=Modifier,
     var voiceMenu by remember{mutableStateOf(false)}
     var languageMenu by remember{mutableStateOf(false)}
     var diagnostic by rememberSaveable{mutableStateOf(false)}
-    var remote by remember{mutableStateOf<MagicPhoneRemoteSettings?>(null)}
     var callers by remember{mutableStateOf<List<MagicPhoneCaller>>(emptyList())}
     var selectedCall by remember{mutableStateOf<MagicPhoneCall?>(null)}
     var busy by remember{mutableStateOf(false)}
