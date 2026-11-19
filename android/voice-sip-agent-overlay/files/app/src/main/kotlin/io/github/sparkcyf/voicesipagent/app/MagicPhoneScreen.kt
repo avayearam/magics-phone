@@ -124,7 +124,7 @@ internal fun MagicPhoneScreen(rt: GatewayRuntime, modifier: Modifier=Modifier,
                 style=MaterialTheme.typography.bodySmall, color=gray)
         }
         PhoneCard("Gemini Live") {
-            Text("کلید Google روی سرور محفوظ است. توکن دستگاه ایجنت را از پنل مدیریتی وارد کن؛ رمز قدیمی Worker هم تا مهاجرت پشتیبانی می‌شود.",
+            Text("اتصال فقط مستقیم به هاست AI برقرار می‌شود. توکن دستگاه همین ایجنت را از مدیریت Magic Phone دریافت کن؛ رمز Worker قدیمی قابل استفاده نیست.",
                 style=MaterialTheme.typography.bodySmall, color=gray)
             OutlinedTextField(value=secret,onValueChange={secret=it},
                 label={Text("توکن اختصاصی دستگاه")},singleLine=true,
@@ -132,7 +132,7 @@ internal fun MagicPhoneScreen(rt: GatewayRuntime, modifier: Modifier=Modifier,
                 keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Password),
                 modifier=Modifier.fillMaxWidth())
             Button(onClick={rt.saveGeminiBridgeToken(secret);secret=""},
-                enabled=secret.length>=24 && idle){Text("ذخیره امن توکن")}
+                enabled=Regex("^mpa_[a-f0-9]{48}$").matches(secret) && idle){Text("ذخیره امن توکن")}
             Text(liveStatus,style=MaterialTheme.typography.bodySmall,color=gray)
             PhoneSwitch("پاسخ‌گویی با هوش مصنوعی",
                 "تماس‌های سیم‌کارت‌های انتخاب‌شده به‌صورت خودکار پاسخ داده می‌شوند.",

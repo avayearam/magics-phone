@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger
  * A direct Gemini Live call endpoint. It replaces the SIP side of CallBridge;
  * the cellular endpoint and its Shizuku audio path remain unchanged.
  *
- * The phone sends only BRIDGE_ACCESS_TOKEN. GEMINI_API_KEY remains in Cloudflare.
+ * The phone uses an agent-specific device token only. GEMINI_API_KEY stays on the origin server.
  * No call audio or credentials are written to logs.
  */
 internal class GeminiLiveEndpoint(
@@ -45,14 +45,14 @@ internal class GeminiLiveEndpoint(
     private val active = ConcurrentHashMap<String, GeminiLeg>()
     private val listeners = CopyOnWriteArrayList<EndpointStatusListener>()
     @Volatile private var closed = false
-    @Volatile private var lastStatus = EndpointStatus(false, "bridge token not configured")
+    @Volatile private var lastStatus = EndpointStatus(false, "agent device token not configured")
 
     override val status: EndpointStatus
         get() {
             if (closed) return EndpointStatus(false, "stopped")
             val token = runCatching { tokenProvider() }.getOrNull()
-            return if (validToken(token)) EndpointStatus(true, "Gemini Live bridge configured")
-            else EndpointStatus(false, "bridge token not configured")
+            return if (validToken(token)) EndpointStatus(true, "origin agent token configured")
+            else EndpointStatus(false, "agent device token not configured")
         }
 
     override fun setIncomingCallHandler(handler: IncomingCallHandler?) = Unit
@@ -68,8 +68,8 @@ internal class GeminiLiveEndpoint(
         }
         val token = runCatching { tokenProvider() }.getOrNull()
         if (!validToken(token)) {
-            leg.fail(HangupCause.UNAVAILABLE, "bridge token missing")
-            updateStatus(EndpointStatus(false, "bridge token not configured"))
+            leg.fail(HangupCause.UNAVAILABLE, "agent device token missing")
+            updateStatus(EndpointStatus(false, "agent device token not configured"))
             return leg
         }
         active[id] = leg
@@ -96,8 +96,7 @@ internal class GeminiLiveEndpoint(
 
     private fun remove(leg: GeminiLeg) { active.remove(leg.id, leg) }
 
-    private fun validToken(value: String?): Boolean =
-        !value.isNullOrBlank() && value.length >= 24 && value.none { it.code < 32 || it.code == 127 }
+    private fun validToken(value: String?): Boolean = MagicLiveHandshake.isDeviceToken(value)
 
     private inner class GeminiLeg(
         id: String,
@@ -116,12 +115,12 @@ internal class GeminiLiveEndpoint(
             transition(LegState.PROCEEDING)
             transition(LegState.RINGING)
             val protocols = try { MagicLiveHandshake.protocols(token) } catch (_: Exception) {
-                fail(HangupCause.UNAVAILABLE, "invalid bridge token")
+                fail(HangupCause.UNAVAILABLE, "invalid agent device token")
                 return
             }
             val request = try {
                 Request.Builder()
-                    .url(MagicLiveHandshake.url(token))
+                    .url(MagicLiveHandshake.URL)
                     .header("Origin", MagicLiveHandshake.ORIGIN)
                     .header("Sec-WebSocket-Protocol", protocols.joinToString(", "))
                     .build()
@@ -183,7 +182,7 @@ internal class GeminiLiveEndpoint(
             if (root.optString("bridgeStatus") == "audio_forwarded") {
                 val forwarded = root.optLong("audioFrames", 0L)
                 if (forwarded > 0 && forwarded % 250L == 0L) {
-                    log("Worker forwarded " + forwarded + " audio frames toward Gemini")
+                    log("Origin forwarded " + forwarded + " audio frames toward Gemini")
                 }
                 return
             }
@@ -235,30 +234,19 @@ internal class GeminiLiveEndpoint(
 }
 
 
-/**
- * Backward-compatible: legacy bridge tokens keep the existing Worker URL.
- * New independently issued device tokens route to the direct-origin WebSocket.
- * A new APK is required for the direct path, but must NOT be released before
- * /call/ws is confirmed operational with real two-way audio.
- */
+/** Direct-origin-only handshake; Cloudflare fallback intentionally removed. */
 internal object MagicLiveHandshake {
-    const val LEGACY_URL = "wss://phone.magics.site/ws?mode=phone"
-    const val DIRECT_URL = "wss://ai.magics.site/call/ws?mode=phone"
-    const val URL = LEGACY_URL
+    const val URL = "wss://ai.magics.site/call/ws?mode=phone"
     const val ORIGIN = "https://ai.magics.site"
     const val PROTOCOL = "magic-phone.v1"
     private val deviceTokenPattern = Regex("^mpa_[a-f0-9]{48}$")
 
-    fun isDeviceToken(secret: String): Boolean = deviceTokenPattern.matches(secret)
-
-    fun url(secret: String): String = if (isDeviceToken(secret)) DIRECT_URL else LEGACY_URL
+    fun isDeviceToken(secret: String?): Boolean = secret != null && deviceTokenPattern.matches(secret)
 
     fun protocols(secret: String): List<String> {
-        require(secret.length >= 24 && secret.none { it.code < 32 || it.code == 127 }) {
-            "invalid access token"
-        }
+        require(isDeviceToken(secret)) { "invalid device token" }
         val encoded = Base64.getUrlEncoder().withoutPadding()
             .encodeToString(secret.toByteArray(Charsets.UTF_8))
-        return listOf(PROTOCOL, (if (isDeviceToken(secret)) "magic-agent." else "magic-auth.") + encoded)
+        return listOf(PROTOCOL, "magic-agent.$encoded")
     }
 }

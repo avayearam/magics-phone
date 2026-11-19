@@ -160,7 +160,7 @@ class GatewayRuntime private constructor(context: Context) {
     private val _geminiAgentEnabled = MutableStateFlow(false)
     val geminiAgentEnabledFlow: StateFlow<Boolean> = _geminiAgentEnabled
     private val _geminiStatus = MutableStateFlow(
-        if (geminiTokenStore.hasToken()) "رمز Worker ذخیره شده است." else "رمز Worker هنوز ثبت نشده است.",
+        if (geminiTokenStore.hasToken()) "توکن ایجنت مستقیم ذخیره شده است." else "توکن ایجنت هنوز ثبت نشده است.",
     )
     val geminiStatusFlow: StateFlow<String> = _geminiStatus
     private var geminiEndpoint: GeminiLiveEndpoint? = null
