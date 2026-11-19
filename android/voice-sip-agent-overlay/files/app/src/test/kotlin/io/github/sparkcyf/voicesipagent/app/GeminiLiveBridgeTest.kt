@@ -7,13 +7,24 @@ import org.junit.Test
 import java.util.Base64
 
 class GeminiLiveBridgeTest {
-    @Test fun handshakeMatchesTheExistingWorkerContract() {
-        val token = "magic-phone-test-token-123456"
+    @Test fun handshakeMatchesDirectOriginAgentContract() {
+        val token = "mpa_" + "ab".repeat(24)
         val encoded = Base64.getUrlEncoder().withoutPadding()
             .encodeToString(token.toByteArray(Charsets.UTF_8))
-        assertEquals("wss://phone.magics.site/ws?mode=phone", MagicLiveHandshake.URL)
+        assertEquals("wss://ai.magics.site/call/ws?mode=phone", MagicLiveHandshake.URL)
         assertEquals("https://ai.magics.site", MagicLiveHandshake.ORIGIN)
-        assertEquals(listOf("magic-phone.v1", "magic-auth.$encoded"), MagicLiveHandshake.protocols(token))
+        assertTrue(MagicLiveHandshake.isDeviceToken(token))
+        assertEquals(listOf("magic-phone.v1", "magic-agent.$encoded"), MagicLiveHandshake.protocols(token))
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun legacyWorkerTokenIsRejectedInsteadOfFallingBack() {
+        MagicLiveHandshake.protocols("magic-phone-test-token-123456")
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun malformedDeviceTokenIsRejected() {
+        MagicLiveHandshake.protocols("mpa_" + "ab".repeat(23))
     }
 
     @Test(expected = IllegalArgumentException::class)
