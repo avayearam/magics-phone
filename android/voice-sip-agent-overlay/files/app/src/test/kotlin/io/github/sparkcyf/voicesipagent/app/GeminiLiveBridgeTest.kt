@@ -71,10 +71,31 @@ class GeminiLiveBridgeTest {
         assertEquals(9, port.queuedFrames())
         assertTrue(port.readFrame().all { it == 12345.toShort() })
         repeat(60) { port.onGeminiPcm24k(pcm24) }
-        assertEquals(50, port.queuedFrames())
+        assertEquals(68, port.queuedFrames())
         port.interrupt()
         assertEquals(0, port.queuedFrames())
     }
+    @Test fun largeGeminiAudioBurstPreservesTheBeginningOfSpeech() {
+        val port = GeminiLiveMediaPort(PcmFormat.WIDEBAND) { true }
+
+        // 300 consecutive 20 ms chunks represent six seconds of speech.
+        // This exceeds the old 1-second queue and must not evict the first words.
+        repeat(300) { index ->
+            val sample = (1000 + index).toShort()
+            val pcm24 = ByteArray(960)
+            for (offset in 0 until pcm24.size step 2) {
+                pcm24[offset] = sample.toByte()
+                pcm24[offset + 1] = (sample.toInt() shr 8).toByte()
+            }
+            port.onGeminiPcm24k(pcm24)
+        }
+
+        assertEquals(300, port.queuedFrames())
+        assertEquals(1000.toShort(), port.readFrame().first())
+        assertEquals(1001.toShort(), port.readFrame().first())
+        port.close()
+    }
+
     @Test fun jitterBufferRebuffersAfterUnderrunAndDrainsShortFinalTurns() {
         val port = GeminiLiveMediaPort(PcmFormat.WIDEBAND) { true }
         val pcm24 = ByteArray(960) { if (it % 2 == 0) 0x39 else 0x30 }

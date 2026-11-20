@@ -21,7 +21,9 @@ internal class GeminiLiveMediaPort(
 ) : MediaPort, AutoCloseable {
     override val isClockSource: Boolean = false
     private val frames = ArrayDeque<ShortArray>()
-    private val maxFrames = 50
+    // 15 seconds of PCM headroom: a single allowed 256 KiB Gemini chunk can contain ~5.46 s.
+    // The old 1-second queue discarded the beginning of large chunks before playback could read them.
+    private val maxFrames = 750
     private val minPrebufferFrames = 9   // 180 ms, matching the verified browser player.
     private val maxPrebufferFrames = 22  // 440 ms, close to the browser player's 450 ms ceiling.
     @Volatile private var targetPrebufferFrames = minPrebufferFrames
@@ -204,8 +206,10 @@ internal class GeminiLiveMediaPort(
         frame[frameFill++] = sample
         if (frameFill == frame.size) {
             if (frames.size >= maxFrames) {
-                frames.removeFirst()
+                // Preserve the beginning of the spoken response. Never evict already queued audio.
                 outDroppedFrames++
+                frameFill = 0
+                return
             }
             frames.addLast(frame.copyOf())
             outMaxQueue = maxOf(outMaxQueue, frames.size)
