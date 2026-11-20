@@ -105,6 +105,15 @@ class SettingsStore(context: Context) {
             .mapNotNull { it.trim().toIntOrNull()?.takeIf { slot -> slot >= 0 } }.toSet(),
     )
 
+    /** Explicit user opt-in for future Gemini Live cellular call handling. */
+    fun geminiModeRequested(): Boolean = prefs.getBoolean("gemini_live_mode_requested", false)
+
+    fun setGeminiModeRequested(on: Boolean) {
+        check(prefs.edit().putBoolean("gemini_live_mode_requested", on).commit()) {
+            "Could not persist Gemini Live call mode"
+        }
+    }
+
     fun save(s: GatewaySettings) {
         prefs.edit()
             .putBoolean("takeover", s.takeover)

@@ -157,7 +157,10 @@ class GatewayRuntime private constructor(context: Context) {
     private val geminiTokenStore = GeminiTokenStore(app)
     private val _geminiTokenConfigured = MutableStateFlow(geminiTokenStore.hasToken())
     val geminiTokenConfiguredFlow: StateFlow<Boolean> = _geminiTokenConfigured
-    private val _geminiAgentEnabled = MutableStateFlow(false)
+    private val _geminiAgentEnabled = MutableStateFlow(
+        GeminiModeResumePolicy.shouldRestore(settingsStore.geminiModeRequested(),
+            geminiTokenStore.hasToken(), settings.takeover),
+    )
     val geminiAgentEnabledFlow: StateFlow<Boolean> = _geminiAgentEnabled
     private val _geminiStatus = MutableStateFlow(
         if (geminiTokenStore.hasToken()) "توکن ایجنت مستقیم ذخیره شده است." else "توکن ایجنت هنوز ثبت نشده است.",
@@ -290,6 +293,15 @@ class GatewayRuntime private constructor(context: Context) {
 
     private fun startGateway() {
         if (!gatewayEnabled || healthCheck != null) return
+        // The foreground service may have stopped temporarily. Restore only a
+        // previous explicit opt-in and only with the device token still present.
+        val restoreLive = GeminiModeResumePolicy.shouldRestore(
+            settingsStore.geminiModeRequested(), geminiTokenStore.hasToken(), settings.takeover)
+        _geminiAgentEnabled.value = restoreLive
+        if (restoreLive) {
+            _geminiStatus.value = "پاسخ‌گویی Gemini Live از تنظیم ذخیره‌شده بازیابی شد."
+            AppLog.i("Gemini Live mode restored after gateway start")
+        }
         configureCallAccess()
         startBackgroundTasks()
         startSip()
@@ -1121,6 +1133,7 @@ class GatewayRuntime private constructor(context: Context) {
 
     private fun applyGeminiAgentMode(on: Boolean) {
         if (on && !geminiTokenStore.hasToken()) return
+        settingsStore.setGeminiModeRequested(on)
         if (_geminiAgentEnabled.value == on) return
         _geminiAgentEnabled.value = on
         geminiPending = null
@@ -1152,6 +1165,7 @@ class GatewayRuntime private constructor(context: Context) {
         }
         if (_health.value.loopbackTest == on) return@execute
         if (on && _geminiAgentEnabled.value) {
+            settingsStore.setGeminiModeRequested(false)
             _geminiAgentEnabled.value = false
             geminiEndpoint?.close()
             geminiEndpoint = null

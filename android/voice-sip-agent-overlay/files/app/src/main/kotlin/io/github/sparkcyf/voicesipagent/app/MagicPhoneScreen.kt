@@ -205,7 +205,15 @@ private fun CallTab(rt:GatewayRuntime,h:HealthState,settings:GatewaySettings,liv
     var showToken by rememberSaveable{mutableStateOf(false)}
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),verticalArrangement=Arrangement.spacedBy(14.dp)) {
         PhoneCard("آمادگی دستیار") {
-            Text(if(h.cellularReady && live)"آماده تست تماس" else "منتظر آماده‌سازی",style=MaterialTheme.typography.titleMedium,color=purple)
+            Text(when {
+                !settings.takeover -> "مدیریت تماس خاموش است"
+                !live -> "پاسخ‌گویی با هوش مصنوعی خاموش است"
+                h.cellularReady -> "آماده تست تماس"
+                else -> "منتظر آماده‌سازی"
+            },style=MaterialTheme.typography.titleMedium,color=purple)
+            if(settings.takeover && !live && tokenReady && apiKeyConfigured)
+                Text("برای پاسخ خودکار، در بخش اتصال ایجنت پایین همین تب «پاسخ‌گویی با هوش مصنوعی» را روشن کن. چراغ‌های سبز فقط وضعیت دسترسی‌ها هستند.",
+                    color=Color(0xFFA72C53),style=MaterialTheme.typography.bodySmall)
             Text("اتصال اولیه با مکالمه صوتی دوطرفه یکسان نیست.",style=MaterialTheme.typography.bodySmall,color=gray)
             Indicator("شیزوکو",h.shizuku==ShizukuConnector.State.CONNECTED)
             Indicator("دسترسی مدیریت تماس",h.callAccessReady)
