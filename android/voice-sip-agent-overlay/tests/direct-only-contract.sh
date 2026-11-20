@@ -14,9 +14,9 @@ grep -Fq 'private fun validToken(value: String?): Boolean = MagicLiveHandshake.i
 grep -Fq '.url(MagicLiveHandshake.URL)' "$ENDPOINT"
 grep -Fq 'builder.header("X-Magic-Phone-Caller", it)' "$ENDPOINT"
 grep -Fq 'fun normalizeCallerNumber(value: String?): String?' "$ENDPOINT"
-grep -Fq 'Regex("^mpa_[a-f0-9]{48}$")' "$TOKEN"
-grep -Fq '0.5.6-direct' "$GRADLE"
-grep -Fq 'versionCode = 14' "$GRADLE"
+grep -Fq 'MagicPhoneCredentialInput.deviceToken(token)' "$TOKEN"
+grep -Fq '0.5.7-direct' "$GRADLE"
+grep -Fq 'versionCode = 15' "$GRADLE"
 if grep -Eq 'phone[.]magics[.]site|magic-auth[.]|LEGACY_URL|BRIDGE_ACCESS_TOKEN|Cloudflare' "$ENDPOINT"; then
   echo "FAILED: legacy Worker reference in Android endpoint" >&2; exit 1
 fi
