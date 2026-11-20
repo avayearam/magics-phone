@@ -98,10 +98,13 @@ internal fun MagicPhoneScreen(rt:GatewayRuntime,modifier:Modifier=Modifier,
         remote=value;promptDraft=value.prompt;voiceDraft=value.voice;languageDraft=value.language
     }
 
-    LaunchedEffect(tokenReady) {
-        if(tokenReady && tokenSaveRequested) {
+    LaunchedEffect(tokenReady,liveStatus) {
+        if(tokenSaveRequested && tokenReady && liveStatus.contains("Android Keystore")) {
             tokenDraft="";tokenNotice="";tokenSaveRequested=false;tab=3
             feedback="توکن ذخیره شد. حالا کلید Google Gemini همین دستگاه را ثبت کن."
+        }else if(tokenSaveRequested && liveStatus.contains("ناموفق")) {
+            tokenSaveRequested=false
+            tokenNotice=liveStatus
         }
     }
     LaunchedEffect(tokenReady,tab) {
