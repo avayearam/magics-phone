@@ -86,9 +86,10 @@ internal class MagicPhoneApi {
         request(token,JSONObject().put("action","delete_caller").put("caller_number",number)).optInt("deleted_count")
 
     private fun request(token:String,body:JSONObject?=null):JSONObject {
-        require(Regex("^mpa_[a-f0-9]{48}$").matches(token)) { "توکن دستگاه معتبر نیست." }
+        val normalized = MagicPhoneCredentialInput.deviceToken(token)
+            ?: throw IllegalArgumentException("توکن دستگاه معتبر نیست.")
         val builder=Request.Builder().url(DEVICE_API_URL)
-            .header("Accept","application/json").header("X-Magic-Phone-Agent-Token",token)
+            .header("Accept","application/json").header("X-Magic-Phone-Agent-Token",normalized)
         val req=if(body==null) builder.get().build()
             else builder.post(body.toString().toRequestBody(JSON)).build()
         client.newCall(req).execute().use { response ->

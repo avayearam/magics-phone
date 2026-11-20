@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -74,6 +75,8 @@ internal fun MagicPhoneScreen(rt:GatewayRuntime,modifier:Modifier=Modifier,
 
     var tab by rememberSaveable{mutableIntStateOf(0)}
     var tokenDraft by remember{mutableStateOf("")}
+    var tokenNotice by rememberSaveable{mutableStateOf("")}
+    var tokenSaveRequested by remember{mutableStateOf(false)}
     var apiKeyDraft by remember{mutableStateOf("")}
     var apiKeyTested by remember{mutableStateOf(false)}
     var promptDraft by remember{mutableStateOf("")}
@@ -95,6 +98,12 @@ internal fun MagicPhoneScreen(rt:GatewayRuntime,modifier:Modifier=Modifier,
         remote=value;promptDraft=value.prompt;voiceDraft=value.voice;languageDraft=value.language
     }
 
+    LaunchedEffect(tokenReady) {
+        if(tokenReady && tokenSaveRequested) {
+            tokenDraft="";tokenNotice="";tokenSaveRequested=false;tab=3
+            feedback="توکن ذخیره شد. حالا کلید Google Gemini همین دستگاه را ثبت کن."
+        }
+    }
     LaunchedEffect(tokenReady,tab) {
         if(tokenReady) {
             val token=tokenStore.load()
@@ -162,8 +171,15 @@ internal fun MagicPhoneScreen(rt:GatewayRuntime,modifier:Modifier=Modifier,
             }
         }
         when(tab) {
-            0 -> CallTab(rt,h,settings,live,tokenReady,remote?.apiKeyConfigured==true,liveStatus,audio,events,idle,canEnable,tokenDraft,{tokenDraft=it},
-                diagnostic,{diagnostic=it},setTakeover,chooseDialer,roleMessage)
+            0 -> CallTab(rt,h,settings,live,tokenReady,remote?.apiKeyConfigured==true,liveStatus,audio,events,idle,canEnable,
+                tokenDraft,{tokenDraft=it;tokenNotice=""},tokenNotice,{
+                    val token=MagicPhoneCredentialInput.deviceToken(tokenDraft)
+                    when {
+                        !idle -> tokenNotice="برای تغییر توکن ابتدا تماس جاری را تمام کن."
+                        token==null -> tokenNotice=MagicPhoneCredentialInput.deviceTokenMessage(tokenDraft)
+                        else -> {tokenSaveRequested=true;tokenNotice="در حال ذخیره امن توکن...";rt.saveGeminiBridgeToken(token)}
+                    }
+                },diagnostic,{diagnostic=it},setTakeover,chooseDialer,roleMessage)
             1 -> AgentTab(remote,tokenReady,busy,feedback,promptDraft,{promptDraft=it},voiceDraft,{voiceDraft=it},
                 languageDraft,{languageDraft=it},voiceMenu,{voiceMenu=it},languageMenu,{languageMenu=it},
                 api,tokenStore,scope,{busy=it},{feedback=it},{loadRemote(it)})
@@ -171,7 +187,7 @@ internal fun MagicPhoneScreen(rt:GatewayRuntime,modifier:Modifier=Modifier,
                 {busy=it},{feedback=it},{callers=it},{confirmDeleteCall=true},{confirmDeleteCaller=true})
             3 -> ApiKeyTab(tokenReady,busy,feedback,remote,apiKeyDraft,{apiKeyDraft=it;apiKeyTested=false},
                 apiKeyTested,{apiKeyTested=it},api,tokenStore,scope,{busy=it},{feedback=it},
-                {remote=it},{confirmClear=true})
+                {remote=it},{confirmClear=true},{tab=0})
         }
     }
 }
@@ -179,8 +195,11 @@ internal fun MagicPhoneScreen(rt:GatewayRuntime,modifier:Modifier=Modifier,
 @Composable
 private fun CallTab(rt:GatewayRuntime,h:HealthState,settings:GatewaySettings,live:Boolean,tokenReady:Boolean,
     apiKeyConfigured:Boolean,liveStatus:String,audio:CallAudioStatus,events:List<String>,idle:Boolean,canEnable:Boolean,
-    tokenDraft:String,onToken:(String)->Unit,diagnostic:Boolean,onDiagnostic:(Boolean)->Unit,
+    tokenDraft:String,onToken:(String)->Unit,tokenNotice:String,onSaveToken:()->Unit,
+    diagnostic:Boolean,onDiagnostic:(Boolean)->Unit,
     setTakeover:(Boolean)->Unit,chooseDialer:()->Unit,roleMessage:String) {
+    val uri=LocalUriHandler.current
+    var showToken by rememberSaveable{mutableStateOf(false)}
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),verticalArrangement=Arrangement.spacedBy(14.dp)) {
         PhoneCard("آمادگی دستیار") {
             Text(if(h.cellularReady && live)"آماده تست تماس" else "منتظر آماده‌سازی",style=MaterialTheme.typography.titleMedium,color=purple)
@@ -213,11 +232,23 @@ private fun CallTab(rt:GatewayRuntime,h:HealthState,settings:GatewaySettings,liv
             Text("مسیر فعال: "+audio.backendLabel.ifEmpty{"هنوز فعال نشده"},style=MaterialTheme.typography.bodySmall,color=gray)
         }
         PhoneCard("اتصال ایجنت") {
-            Text("توکن اختصاصی دستگاه را از مدیریت ایجنت‌های Magic Phone دریافت کن. توکن قدیمی Worker قابل استفاده نیست.",style=MaterialTheme.typography.bodySmall,color=gray)
-            OutlinedTextField(value=tokenDraft,onValueChange=onToken,label={Text("توکن اختصاصی دستگاه")},singleLine=true,
-                visualTransformation=PasswordVisualTransformation(),keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Password),modifier=Modifier.fillMaxWidth())
-            Button(onClick={rt.saveGeminiBridgeToken(tokenDraft.trim());onToken("")},
-                enabled=Regex("^mpa_[a-f0-9]{48}$").matches(tokenDraft.trim()) && idle){Text("ذخیره امن توکن")}
+            Text("ابتدا از پنل Magic Phone برای این گوشی یک توکن اختصاصی صادر کن. این توکن با کلید Google فرق دارد.",style=MaterialTheme.typography.bodySmall,color=gray)
+            OutlinedButton(onClick={runCatching{uri.openUri("https://ai.magics.site/manager/call-agents.php")}},
+                modifier=Modifier.fillMaxWidth()){Text("۱. دریافت توکن از پنل Magic Phone")}
+            OutlinedTextField(value=tokenDraft,onValueChange=onToken,label={Text("۲. الصاق توکن اختصاصی دستگاه")},singleLine=true,
+                visualTransformation=if(showToken)VisualTransformation.None else PasswordVisualTransformation(),
+                trailingIcon={TextButton(onClick={showToken=!showToken}){Text(if(showToken)"پنهان" else "نمایش")}},
+                keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Password),modifier=Modifier.fillMaxWidth())
+            val enteredToken=MagicPhoneCredentialInput.deviceToken(tokenDraft)
+            Text(MagicPhoneCredentialInput.deviceTokenMessage(tokenDraft),
+                color=if(tokenDraft.isNotBlank() && enteredToken==null)Color(0xFFA72C53) else gray,
+                style=MaterialTheme.typography.bodySmall)
+            Button(onClick=onSaveToken,enabled=tokenDraft.isNotBlank() && idle,modifier=Modifier.fillMaxWidth()){
+                Text("۳. ذخیره امن توکن دستگاه")
+            }
+            if(!idle)Text("هنگام تماس فعال امکان تعویض توکن نیست.",color=Color(0xFFA72C53),style=MaterialTheme.typography.bodySmall)
+            if(tokenNotice.isNotBlank())Text(tokenNotice,color=Color(0xFFA72C53),style=MaterialTheme.typography.bodySmall)
+            if(tokenReady)Text("توکن دستگاه ذخیره شده است. برای ادامه به تب اتصال API برو.",color=purple,style=MaterialTheme.typography.bodySmall)
             Text(liveStatus,style=MaterialTheme.typography.bodySmall,color=gray)
             PhoneSwitch("پاسخ‌گویی با هوش مصنوعی","تماس‌های سیم‌کارت‌های انتخاب‌شده به‌صورت خودکار پاسخ داده می‌شوند.",live,
                 {rt.setGeminiAgentEnabled(it)},enabled=live||canEnable)
@@ -300,40 +331,53 @@ private fun AgentTab(remote:MagicPhoneRemoteSettings?,tokenReady:Boolean,busy:Bo
 private fun ApiKeyTab(tokenReady:Boolean,busy:Boolean,feedback:String,remote:MagicPhoneRemoteSettings?,
     apiKey:String,onApiKey:(String)->Unit,tested:Boolean,onTested:(Boolean)->Unit,api:MagicPhoneApi,
     tokenStore:GeminiTokenStore,scope:CoroutineScope,onBusy:(Boolean)->Unit,onFeedback:(String)->Unit,
-    onRemote:(MagicPhoneRemoteSettings)->Unit,onClear:()->Unit) {
+    onRemote:(MagicPhoneRemoteSettings)->Unit,onClear:()->Unit,onGoToToken:()->Unit) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),verticalArrangement=Arrangement.spacedBy(14.dp)) {
         PhoneCard("اتصال اختصاصی Google Gemini") {
             Text("هر توکن دستگاه کلید API مستقل دارد. کلید داخل گوشی یا APK ذخیره نمی‌شود؛ فقط به‌صورت رمزنگاری‌شده روی سرور نگهداری می‌شود.",style=MaterialTheme.typography.bodySmall,color=gray)
+            if(!tokenReady){
+                Text("برای فعال‌شدن ذخیره کلید باید ابتدا توکن این دستگاه را در تب تماس ثبت کنی.",
+                    color=Color(0xFFA72C53),style=MaterialTheme.typography.bodySmall)
+                OutlinedButton(onClick=onGoToToken,modifier=Modifier.fillMaxWidth()){Text("رفتن به ثبت توکن")}
+            }
             if(remote?.apiKeyConfigured==true){
                 Indicator("کلید API این دستگاه",true)
                 Text("کلید ثبت‌شده: •••• "+remote.apiKeyHint,style=MaterialTheme.typography.bodySmall,color=gray)
             }else Indicator("کلید API این دستگاه",false)
             OutlinedTextField(value=apiKey,onValueChange=onApiKey,label={Text("Google Gemini API Key")},singleLine=true,
                 visualTransformation=PasswordVisualTransformation(),keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Password),modifier=Modifier.fillMaxWidth())
+            Text(MagicPhoneCredentialInput.googleApiKeyMessage(apiKey),
+                color=if(apiKey.isNotBlank() && MagicPhoneCredentialInput.googleApiKey(apiKey)==null)Color(0xFFA72C53) else gray,
+                style=MaterialTheme.typography.bodySmall)
             OutlinedButton(onClick={
+                val formatted=MagicPhoneCredentialInput.googleApiKey(apiKey)
+                if(formatted==null)onFeedback(MagicPhoneCredentialInput.googleApiKeyMessage(apiKey))
+                else {
                 val token=tokenStore.load()
                 if(token!=null)scope.launch{
                     onBusy(true)
-                    try{withContext(Dispatchers.IO){api.testApiKey(token,apiKey.trim())};onTested(true);onFeedback("کلید معتبر است و Google Generative Language API پاسخ داده است.")}
+                    try{withContext(Dispatchers.IO){api.testApiKey(token,formatted)};onTested(true);onFeedback("کلید معتبر است و Google Generative Language API پاسخ داده است.")}
                     catch(e:Exception){onTested(false);onFeedback(e.message ?: "اعتبارسنجی کلید ناموفق بود.")}
                     finally{onBusy(false)}
                 }
-            },enabled=tokenReady && !busy && apiKey.trim().length>=20,modifier=Modifier.fillMaxWidth()){
+                }
+            },enabled=tokenReady && !busy && apiKey.isNotBlank(),modifier=Modifier.fillMaxWidth()){
                 Text(if(busy)"در حال بررسی..." else "بررسی اعتبار کلید")
             }
             Button(onClick={
                 val token=tokenStore.load()
-                if(token!=null)scope.launch{
+                val formatted=MagicPhoneCredentialInput.googleApiKey(apiKey)
+                if(token!=null && formatted!=null)scope.launch{
                     onBusy(true)
                     try{
-                        val saved=withContext(Dispatchers.IO){api.saveApiKey(token,apiKey.trim())}
+                        val saved=withContext(Dispatchers.IO){api.saveApiKey(token,formatted)}
                         val latest=withContext(Dispatchers.IO){api.loadSettings(token)}
                         onRemote(latest);onApiKey("");onTested(false)
                         onFeedback("کلید API برای این دستگاه ذخیره شد؛ چهار رقم پایانی: "+saved.second)
                     }catch(e:Exception){onFeedback(e.message ?: "ذخیره کلید ناموفق بود.")}
                     finally{onBusy(false)}
                 }
-            },enabled=tokenReady && !busy && tested && apiKey.trim().length>=20,modifier=Modifier.fillMaxWidth()){Text("ذخیره امن کلید")}
+            },enabled=tokenReady && !busy && tested && MagicPhoneCredentialInput.googleApiKey(apiKey)!=null,modifier=Modifier.fillMaxWidth()){Text("ذخیره امن کلید")}
             if(remote?.apiKeyConfigured==true)OutlinedButton(onClick=onClear,enabled=!busy,modifier=Modifier.fillMaxWidth()){Text("حذف کلید ذخیره‌شده")}
         }
         PhoneCard("نحوه مصرف") {

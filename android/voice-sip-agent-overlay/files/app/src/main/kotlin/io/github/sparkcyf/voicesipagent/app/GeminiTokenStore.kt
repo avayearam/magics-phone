@@ -17,10 +17,11 @@ internal class GeminiTokenStore(context: Context) {
     fun hasToken(): Boolean = !load().isNullOrBlank()
 
     fun save(token: String) {
-        require(Regex("^mpa_[a-f0-9]{48}$").matches(token)) { "Invalid agent device token" }
+        val normalized = MagicPhoneCredentialInput.deviceToken(token)
+            ?: throw IllegalArgumentException("Invalid agent device token")
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(Cipher.ENCRYPT_MODE, key())
-        val sealed = cipher.iv + cipher.doFinal(token.toByteArray(Charsets.UTF_8))
+        val sealed = cipher.iv + cipher.doFinal(normalized.toByteArray(Charsets.UTF_8))
         prefs.edit().putString(TOKEN_KEY, Base64.encodeToString(sealed, Base64.NO_WRAP)).apply()
     }
 
