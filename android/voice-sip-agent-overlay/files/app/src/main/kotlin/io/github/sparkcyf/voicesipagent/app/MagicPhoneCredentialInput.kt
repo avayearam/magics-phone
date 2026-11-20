@@ -23,7 +23,13 @@ internal object MagicPhoneCredentialInput {
         return "توکن قدیمی Worker پذیرفته نمی‌شود؛ از پنل Magic Phone یک توکن دستگاه جدید بگیر."
     }
 
-    fun googleApiKey(raw: String): String? = cleaned(raw).takeIf { keyPattern.matches(it) }
+    fun googleApiKey(raw: String): String? {
+        val value = cleaned(raw)
+        // Device identity tokens also satisfy the broad legacy Google-key charset.
+        // Never let users register a device token as their Google credential.
+        if (deviceToken(value) != null) return null
+        return value.takeIf { keyPattern.matches(it) }
+    }
     fun googleApiKeyMessage(raw: String): String = when {
         raw.isBlank() -> "کلید Google Gemini مخصوص این گوشی را وارد کن."
         googleApiKey(raw) != null -> "فرمت کلید قابل بررسی است؛ اعتبار واقعی از سرور بررسی می‌شود."
