@@ -198,21 +198,24 @@ internal class GeminiLiveEndpoint(
             }
             val server = root.optJSONObject("serverContent") ?: return
             if (server.optBoolean("interrupted", false)) mediaPort?.interrupt()
-            val parts = server.optJSONObject("modelTurn")?.optJSONArray("parts") ?: return
-            for (index in 0 until parts.length()) {
-                val part = parts.optJSONObject(index) ?: continue
-                val inline = part.optJSONObject("inlineData") ?: part.optJSONObject("inline_data") ?: continue
-                val mime = inline.optString("mimeType", inline.optString("mime_type", "audio/pcm;rate=24000"))
-                if (!mime.startsWith("audio/pcm")) continue
-                val rate = Regex("rate=(\\d+)").find(mime)?.groupValues?.getOrNull(1)?.toIntOrNull() ?: 24000
-                if (rate != 24000) {
-                    log("Unsupported Gemini audio sample rate: $rate")
-                    fail(HangupCause.INTERNAL_ERROR, "unsupported Gemini audio format")
-                    return
+            val parts = server.optJSONObject("modelTurn")?.optJSONArray("parts")
+            if (parts != null) {
+                for (index in 0 until parts.length()) {
+                    val part = parts.optJSONObject(index) ?: continue
+                    val inline = part.optJSONObject("inlineData") ?: part.optJSONObject("inline_data") ?: continue
+                    val mime = inline.optString("mimeType", inline.optString("mime_type", "audio/pcm;rate=24000"))
+                    if (!mime.startsWith("audio/pcm")) continue
+                    val rate = Regex("rate=(\\d+)").find(mime)?.groupValues?.getOrNull(1)?.toIntOrNull() ?: 24000
+                    if (rate != 24000) {
+                        log("Unsupported Gemini audio sample rate: $rate")
+                        fail(HangupCause.INTERNAL_ERROR, "unsupported Gemini audio format")
+                        return
+                    }
+                    val encoded = inline.optString("data")
+                    if (encoded.isNotEmpty()) mediaPort?.onGeminiPcm24k(Base64.getDecoder().decode(encoded))
                 }
-                val encoded = inline.optString("data")
-                if (encoded.isNotEmpty()) mediaPort?.onGeminiPcm24k(Base64.getDecoder().decode(encoded))
             }
+            if (server.optBoolean("turnComplete", false)) mediaPort?.endTurn()
         }
 
         fun fail(cause: HangupCause, safeReason: String) {

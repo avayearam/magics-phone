@@ -50,6 +50,9 @@ class GeminiLiveBridgeTest {
         port.onGeminiPcm24k(pcm24.copyOfRange(0, 202))
         port.onGeminiPcm24k(pcm24.copyOfRange(202, pcm24.size))
         assertEquals(1, port.queuedFrames())
+        assertTrue(port.readFrame().all { it == 0.toShort() }) // wait for the 180 ms jitter buffer
+        repeat(8) { port.onGeminiPcm24k(pcm24) }
+        assertEquals(9, port.queuedFrames())
         assertTrue(port.readFrame().all { it == 12345.toShort() })
         port.close()
         assertTrue(port.readFrame().all { it == 0.toShort() })
@@ -63,12 +66,41 @@ class GeminiLiveBridgeTest {
         val pcm24 = ByteArray(960) { if (it % 2 == 0) 0x39 else 0x30 }
         port.onGeminiPcm24k(pcm24)
         assertEquals(1, port.queuedFrames())
+        assertTrue(port.readFrame().all { it == 0.toShort() })
+        repeat(8) { port.onGeminiPcm24k(pcm24) }
+        assertEquals(9, port.queuedFrames())
         assertTrue(port.readFrame().all { it == 12345.toShort() })
         repeat(60) { port.onGeminiPcm24k(pcm24) }
         assertEquals(50, port.queuedFrames())
         port.interrupt()
         assertEquals(0, port.queuedFrames())
     }
+    @Test fun jitterBufferRebuffersAfterUnderrunAndDrainsShortFinalTurns() {
+        val port = GeminiLiveMediaPort(PcmFormat.WIDEBAND) { true }
+        val pcm24 = ByteArray(960) { if (it % 2 == 0) 0x39 else 0x30 }
+
+        repeat(9) { port.onGeminiPcm24k(pcm24) }
+        assertTrue(port.readFrame().all { it == 12345.toShort() })
+        repeat(8) { assertTrue(port.readFrame().all { it == 12345.toShort() }) }
+
+        // A mid-turn starvation increases the prebuffer from 180 ms to 240 ms.
+        assertTrue(port.readFrame().all { it == 0.toShort() })
+        repeat(9) { port.onGeminiPcm24k(pcm24) }
+        assertTrue(port.readFrame().all { it == 0.toShort() })
+        repeat(3) { port.onGeminiPcm24k(pcm24) }
+        assertTrue(port.readFrame().all { it == 12345.toShort() })
+
+        port.interrupt()
+        assertEquals(0, port.queuedFrames())
+        assertTrue(port.readFrame().all { it == 0.toShort() })
+
+        // A short response is flushed when Gemini marks the turn complete.
+        port.onGeminiPcm24k(pcm24)
+        port.endTurn()
+        assertTrue(port.readFrame().all { it == 12345.toShort() })
+        port.close()
+    }
+
     @Test fun silentFramesAndFailedWorkerSendsAreReportedWithoutAudioData() {
         val reports = mutableListOf<String>()
         val port = GeminiLiveMediaPort(PcmFormat.WIDEBAND, diagnostic = { reports += it }) { false }
@@ -79,6 +111,11 @@ class GeminiLiveBridgeTest {
         assertTrue(report.contains("inVoiced=0"))
         assertTrue(report.contains("wsSendFailures=250"))
         assertTrue(report.contains("outChunks=0"))
+        assertTrue(report.contains("outPrebufferMs=180"))
+        assertTrue(report.contains("outUnderruns=0"))
+        assertTrue(report.contains("outPrebufferWaits=0"))
+        assertTrue(report.contains("outDroppedFrames=0"))
+        assertTrue(report.contains("outMaxGapMs=0"))
         port.close()
     }
 
