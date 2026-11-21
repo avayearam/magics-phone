@@ -29,6 +29,7 @@ class CallEndIntentDetectorTest {
         listOf(
             "قطع کن",
             "لطفاً قطع کن",
+            "خب، قطع کن",
             "تماس رو قطع کن",
             "تماس را قطع کن",
             "مکالمه رو تموم کن",
@@ -50,6 +51,7 @@ class CallEndIntentDetectorTest {
     @Test fun doesNotTreatUnrelatedOrNegatedCutCommandsAsCallEnd() {
         listOf(
             "صدای موسیقی رو قطع کن",
+            "موسیقی رو قطع کن",
             "این ویدیو رو قطع کن",
             "تماس رو قطع نکن",
             "هنوز قطع نکن",

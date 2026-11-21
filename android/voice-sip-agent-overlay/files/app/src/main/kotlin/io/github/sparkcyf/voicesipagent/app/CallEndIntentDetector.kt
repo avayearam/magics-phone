@@ -15,7 +15,7 @@ internal object CallEndIntentDetector {
         RegexOption.IGNORE_CASE,
     )
     private val directEndCallCommandAtEnd = Regex(
-        """(?:^|\s)(?:(?:لطفا|خواهشا)\s+)?(?:(?:تماس|مکالمه|گوشی)\s+(?:را|رو)\s+)?(?:قطع\s+کن|قطعش\s+کن|تموم\s+کن|تمام\s+کن|ببند|خاتمه\s+بده|پایان\s+بده)(?:\s+(?:لطفا|خواهشا))?$|(?:^|\s)(?:به\s+(?:تماس|مکالمه)\s+پایان\s+بده|دیگه\s+صحبت\s+نکنیم|hang\s+up(?:\s+(?:the\s+)?(?:phone|call))?|end\s+(?:the\s+)?call|end\s+this\s+call|disconnect(?:\s+(?:the\s+)?call)?|stop\s+the\s+call)$""",
+        """^(?:(?:خب|خوب|لطفا|خواهشا)\s+)*(?:(?:تماس|مکالمه|گوشی)\s+(?:را|رو)\s+)?(?:(?:لطفا|خواهشا)\s+)?(?:قطع\s+کن|قطعش\s+کن|تموم\s+کن|تمام\s+کن|ببند|خاتمه\s+بده|پایان\s+بده)(?:\s+(?:لطفا|خواهشا))?$|^(?:به\s+(?:تماس|مکالمه)\s+پایان\s+بده|دیگه\s+صحبت\s+نکنیم|hang\s+up(?:\s+(?:the\s+)?(?:phone|call))?|end\s+(?:the\s+)?call|end\s+this\s+call|disconnect(?:\s+(?:the\s+)?call)?|stop\s+the\s+call)$""",
         RegexOption.IGNORE_CASE,
     )
     private val holdPhrase = Regex(
