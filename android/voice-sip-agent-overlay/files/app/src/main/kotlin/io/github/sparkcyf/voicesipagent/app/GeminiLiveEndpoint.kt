@@ -21,6 +21,7 @@ import java.util.Base64
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -107,6 +108,10 @@ internal class GeminiLiveEndpoint(
         @Volatile private var socket: WebSocket? = null
         @Volatile private var mediaPort: GeminiLiveMediaPort? = null
         @Volatile private var ended = false
+        @Volatile private var hangupScheduled = false
+        @Volatile private var endCallTask: ScheduledFuture<*>? = null
+        @Volatile private var setupTimeout: ScheduledFuture<*>? = null
+        private val goodbyeGate = GoodbyeHangupGate()
         private val callerNumber = MagicLiveHandshake.normalizeCallerNumber(caller.number)
         private val timer = Executors.newSingleThreadScheduledExecutor { r ->
             Thread(r, "gemini-live-timeout-$id").apply { isDaemon = true }
@@ -130,7 +135,7 @@ internal class GeminiLiveEndpoint(
                 fail(HangupCause.UNAVAILABLE, "invalid WebSocket configuration")
                 return
             }
-            timer.schedule({
+            setupTimeout = timer.schedule({
                 if (!ended && state != LegState.CONNECTED) {
                     fail(HangupCause.NO_ANSWER, "Gemini setup timed out")
                 }
@@ -171,7 +176,8 @@ internal class GeminiLiveEndpoint(
                         else ws.send(JSONObject().put("type", "audio").put("data", encodedAudio).toString())
                     }
                     mediaPort = port
-                    timer.shutdownNow()
+                    setupTimeout?.cancel(false)
+                    setupTimeout = null
                     if (transition(LegState.CONNECTED)) {
                         publishMedia(port)
                         val started = socket?.send(JSONObject().put("type", "phone_start").toString()) == true
@@ -196,9 +202,19 @@ internal class GeminiLiveEndpoint(
                 fail(HangupCause.NETWORK_ERROR, "Gemini bridge error")
                 return
             }
-            val server = root.optJSONObject("serverContent") ?: return
-            if (server.optBoolean("interrupted", false)) mediaPort?.interrupt()
+
+            // Transcriptions can arrive as top-level Live messages without serverContent.
+            val server = root.optJSONObject("serverContent") ?: JSONObject()
+            if (server.optBoolean("interrupted", false)) {
+                mediaPort?.interrupt()
+                goodbyeGate.onInterrupted()
+                cancelPendingHangup("caller interrupted the farewell")
+            }
+
             val parts = server.optJSONObject("modelTurn")?.optJSONArray("parts")
+            if (parts != null && parts.length() > 0) goodbyeGate.onAssistantTurnStarted()
+            observeTranscriptions(root, server)
+
             if (parts != null) {
                 for (index in 0 until parts.length()) {
                     val part = parts.optJSONObject(index) ?: continue
@@ -215,12 +231,101 @@ internal class GeminiLiveEndpoint(
                     if (encoded.isNotEmpty()) mediaPort?.onGeminiPcm24k(Base64.getDecoder().decode(encoded))
                 }
             }
-            if (server.optBoolean("turnComplete", false)) mediaPort?.endTurn()
+
+            if (server.optBoolean("turnComplete", false)) {
+                mediaPort?.endTurn()
+                if (goodbyeGate.onAssistantTurnCompleted()) scheduleHangupAfterPlayback()
+            }
+            if (goodbyeGate.consumeReadyAfterTranscript()) scheduleHangupAfterPlayback()
+        }
+
+        private fun observeTranscriptions(root: JSONObject, server: JSONObject) {
+            val input = root.optJSONObject("inputTranscription") ?: server.optJSONObject("inputTranscription")
+            if (input != null && isFinalTranscription(input)) {
+                val spoken = input.optString("text").trim()
+                if (spoken.isNotEmpty()) {
+                    // Any new caller turn supersedes a pending automatic hangup.
+                    cancelPendingHangup("caller spoke again")
+                    goodbyeGate.onCallerTranscript(spoken)
+                    if (CallEndIntentDetector.isCallerGoodbye(spoken)) {
+                        log("Caller goodbye detected; waiting for the final Gemini response")
+                    }
+                }
+            }
+
+            val output = root.optJSONObject("outputTranscription") ?: server.optJSONObject("outputTranscription")
+            if (output != null && isFinalTranscription(output)) {
+                val spoken = output.optString("text").trim()
+                if (spoken.isNotEmpty()) {
+                    goodbyeGate.onAssistantTranscript(spoken)
+                    if (CallEndIntentDetector.isAssistantFarewell(spoken)) {
+                        log("Assistant farewell detected; waiting for playback completion")
+                    }
+                }
+            }
+        }
+
+        private fun isFinalTranscription(value: JSONObject): Boolean =
+            !value.has("finished") || value.optBoolean("finished", false)
+
+        private fun scheduleHangupAfterPlayback() {
+            if (ended || hangupScheduled) return
+            hangupScheduled = true
+            val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(20)
+
+            fun pollPlaybackQueue() {
+                if (ended || !hangupScheduled) return
+                if ((mediaPort?.queuedFrames() ?: 0) == 0) {
+                    postHangupCheck(300) {
+                        if ((mediaPort?.queuedFrames() ?: 0) == 0) {
+                            hangupScheduled = false
+                            endCallTask = null
+                            log("Goodbye audio drained; ending Gemini Live and cellular call")
+                            fail(HangupCause.NORMAL, "goodbye")
+                        } else {
+                            pollPlaybackQueue()
+                        }
+                    }
+                } else if (System.nanoTime() >= deadline) {
+                    hangupScheduled = false
+                    endCallTask = null
+                    log("Goodbye audio drain timed out; ending call safely")
+                    fail(HangupCause.NORMAL, "goodbye playback timeout")
+                } else {
+                    postHangupCheck(40) { pollPlaybackQueue() }
+                }
+            }
+
+            postHangupCheck(40) { pollPlaybackQueue() }
+        }
+
+        private fun postHangupCheck(delayMs: Long, action: () -> Unit) {
+            if (ended || !hangupScheduled) return
+            try {
+                endCallTask = timer.schedule({
+                    if (!ended && hangupScheduled) action()
+                }, delayMs, TimeUnit.MILLISECONDS)
+            } catch (_: java.util.concurrent.RejectedExecutionException) {
+                hangupScheduled = false
+            }
+        }
+
+        private fun cancelPendingHangup(reason: String) {
+            if (!hangupScheduled) return
+            hangupScheduled = false
+            endCallTask?.cancel(false)
+            endCallTask = null
+            log("Automatic goodbye hangup cancelled: $reason")
         }
 
         fun fail(cause: HangupCause, safeReason: String) {
             if (ended) return
             ended = true
+            setupTimeout?.cancel(false)
+            setupTimeout = null
+            hangupScheduled = false
+            endCallTask?.cancel(false)
+            endCallTask = null
             timer.shutdownNow()
             mediaPort?.close()
             socket?.close(1000, safeReason)
