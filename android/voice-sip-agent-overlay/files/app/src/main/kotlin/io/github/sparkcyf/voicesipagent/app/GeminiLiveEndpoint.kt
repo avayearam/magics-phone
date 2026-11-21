@@ -249,6 +249,8 @@ internal class GeminiLiveEndpoint(
                     goodbyeGate.onCallerTranscript(spoken)
                     if (CallEndIntentDetector.isCallerGoodbye(spoken)) {
                         log("Caller goodbye detected; waiting for the final Gemini response")
+                    } else if (CallEndIntentDetector.isCallerEndCallCommand(spoken)) {
+                        log("Caller requested call termination; waiting for Gemini's farewell response")
                     }
                 }
             }

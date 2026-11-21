@@ -25,6 +25,48 @@ class CallEndIntentDetectorTest {
         }
     }
 
+    @Test fun recognizesDirectPersianEndCallCommands() {
+        listOf(
+            "قطع کن",
+            "لطفاً قطع کن",
+            "تماس رو قطع کن",
+            "تماس را قطع کن",
+            "مکالمه رو تموم کن",
+            "مکالمه را تمام کن",
+            "تماس رو ببند",
+            "به مکالمه پایان بده",
+            "دیگه صحبت نکنیم",
+        ).forEach {
+            assertTrue("Expected end-call command: $it", CallEndIntentDetector.isCallerEndCallCommand(it))
+        }
+    }
+
+    @Test fun recognizesEnglishEndCallCommands() {
+        listOf("hang up", "hang up the phone", "end the call", "end this call", "disconnect the call").forEach {
+            assertTrue("Expected end-call command: $it", CallEndIntentDetector.isCallerEndCallCommand(it))
+        }
+    }
+
+    @Test fun doesNotTreatUnrelatedOrNegatedCutCommandsAsCallEnd() {
+        listOf(
+            "صدای موسیقی رو قطع کن",
+            "این ویدیو رو قطع کن",
+            "تماس رو قطع نکن",
+            "هنوز قطع نکن",
+            "من معنی قطع کردن تماس رو می‌پرسم",
+        ).forEach {
+            assertFalse("Must not end call: $it", CallEndIntentDetector.isCallerEndCallCommand(it))
+        }
+    }
+
+    @Test fun explicitEndCallCommandWaitsForGeminiTurnCompletion() {
+        val gate = GoodbyeHangupGate()
+        gate.onCallerTranscript("قطع کن")
+        assertFalse(gate.consumeReadyAfterTranscript())
+        assertTrue(gate.onAssistantTurnCompleted())
+        assertFalse(gate.consumeReadyAfterTranscript())
+    }
+
     @Test fun normalizesArabicCharactersAndPersianJoiners() {
         assertTrue(CallEndIntentDetector.isCallerGoodbye("خدا‌نگهدار"))
         assertTrue(CallEndIntentDetector.isCallerGoodbye("خداحافظ"))
@@ -79,6 +121,11 @@ class CallEndIntentDetectorTest {
         continued.onCallerTranscript("خداحافظ")
         continued.onCallerTranscript("نه صبر کن، یه سوال دیگه دارم")
         assertFalse(continued.onAssistantTurnCompleted())
+
+        val commandInterrupted = GoodbyeHangupGate()
+        commandInterrupted.onCallerTranscript("قطع کن")
+        commandInterrupted.onCallerTranscript("نه صبر کن، یه سؤال دیگه دارم")
+        assertFalse(commandInterrupted.onAssistantTurnCompleted())
     }
 
     @Test fun aNewAssistantTurnMustCompleteBeforeTheHangupGateOpens() {

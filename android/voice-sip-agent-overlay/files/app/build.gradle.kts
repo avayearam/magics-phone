@@ -13,8 +13,8 @@ android {
         applicationId = "site.magics.phone.agent"
         minSdk = 30
         targetSdk = 36
-        versionCode = 19
-        versionName = "0.5.11-direct"
+        versionCode = 20
+        versionName = "0.5.12-direct"
         // Filter all transitive JNI libraries as well as PJSIP's own module outputs.
         ndk {
             //abiFilters += listOf("arm64-v8a", "x86_64")
