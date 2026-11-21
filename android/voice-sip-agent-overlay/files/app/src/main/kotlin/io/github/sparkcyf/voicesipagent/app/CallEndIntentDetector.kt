@@ -7,15 +7,15 @@ internal object CallEndIntentDetector {
     private val nonWordCharacters = Regex("[^\\p{L}\\p{N}\\s']+")
     private val whitespace = Regex("\\s+")
     private val farewellAtEnd = Regex(
-        """(?:^|\\s)(?:خداحافظ|خدا\\s+حافظ|خدانگهدار|خدا\\s+نگهدار|خدا\\s+نگه\\s+دار|خدانگهدارت|خدا\\s+نگهدارت|بدرود|بای|goodbye|bye(?:\\s+bye)?|see\\s+you(?:\\s+later)?|talk\\s+to\\s+you\\s+later)(?:\\s+(?:عزیزم|عزیز|جان|پسر|دوست\\s+من))?$""",
+        """(?:^|\s)(?:خداحافظ|خدا\s+حافظ|خدانگهدار|خدا\s+نگهدار|خدا\s+نگه\s+دار|خدانگهدارت|خدا\s+نگهدارت|بدرود|بای|goodbye|bye(?:\s+bye)?|see\s+you(?:\s+later)?|talk\s+to\s+you\s+later)(?:\s+(?:عزیزم|عزیز|جان|پسر|دوست\s+من))?$""",
         RegexOption.IGNORE_CASE,
     )
     private val explicitFarewellAtEnd = Regex(
-        """(?:^|\\s)(?:خداحافظی\\s+(?:کنیم|می\\s+کنیم)|بیا\\s+خداحافظی\\s+کنیم|let\\s+me\\s+say\\s+goodbye|we\\s+should\\s+say\\s+goodbye)$""",
+        """(?:^|\s)(?:خداحافظی\s+(?:کنیم|می\s+کنیم)|بیا\s+خداحافظی\s+کنیم|let\s+me\s+say\s+goodbye|we\s+should\s+say\s+goodbye)$""",
         RegexOption.IGNORE_CASE,
     )
     private val holdPhrase = Regex(
-        """(?:^|\\s)(?:صبر\\s+کن|صبرکن|یه\\s+لحظه|یک\\s+لحظه|wait|hold\\s+on|don't\\s+hang\\s+up|do\\s+not\\s+hang\\s+up|not\\s+yet)(?:\\s|$)""",
+        """(?:^|\s)(?:صبر\s+کن|صبرکن|یه\s+لحظه|یک\s+لحظه|wait|hold\s+on|don't\s+hang\s+up|do\s+not\s+hang\s+up|not\s+yet)(?:\s|$)""",
         RegexOption.IGNORE_CASE,
     )
 
@@ -23,7 +23,7 @@ internal object CallEndIntentDetector {
         .replace('ي', 'ی')
         .replace('ك', 'ک')
         .replace('\u200c', ' ')
-        .replace('\\u200f', ' ')
+        .replace('\u200f', ' ')
         .lowercase(Locale.ROOT)
         .replace(nonWordCharacters, " ")
         .replace(whitespace, " ")
